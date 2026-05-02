@@ -65,6 +65,55 @@ export interface Message {
   created_at: string;
 }
 
+// Session types
+export interface Session {
+  id: string;
+  workspace_id: string;
+  channel_id: string;
+  name: string;
+  work_directory: string;
+  git_branch: string | null;
+  status: string;
+  created_by_type: string;
+  created_by_id: string;
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SessionMember {
+  session_id: string;
+  agent_id: string;
+  role: string;
+  joined_at: string;
+  left_at: string | null;
+}
+
+export interface CreateSessionInput {
+  workspace_id: string;
+  channel_id: string;
+  name: string;
+  work_directory: string;
+  git_branch?: string;
+  created_by_type: string;
+  created_by_id: string;
+}
+
+// Permission types
+export interface AgentPermission {
+  id: string;
+  agent_id: string;
+  scope_type: string;
+  scope_id: string | null;
+  permission_type: string;
+  granted_by_type: string;
+  granted_by_id: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+}
+
 // Run types
 export interface StartRunInput {
   agent_id: string;
@@ -123,6 +172,19 @@ export const api = {
     }) => invoke<Message>("send_message", { input }),
     list: (channelId: string, limit?: number) =>
       invoke<Message[]>("list_messages", { channelId, limit }),
+  },
+  sessions: {
+    create: (input: CreateSessionInput) => invoke<Session>("create_session", { input }),
+    get: (id: string) => invoke<Session>("get_session", { id }),
+    updateStatus: (id: string, status: string) => invoke<Session>("update_session_status", { id, status }),
+    addMember: (sessionId: string, agentId: string, role: string) => invoke<void>("add_session_member", { sessionId, agentId, role }),
+    listMembers: (sessionId: string) => invoke<SessionMember[]>("list_session_members", { sessionId }),
+  },
+  permissions: {
+    grant: (input: { agent_id: string; scope_type: string; scope_id?: string; permission_type: string; granted_by_type: string; granted_by_id: string }) => invoke<AgentPermission>("grant_permission", { input }),
+    check: (agentId: string, permissionType: string, scopeType: string, scopeId?: string) => invoke<boolean>("check_permission", { agentId, permissionType, scopeType, scopeId }),
+    revoke: (id: string) => invoke<void>("revoke_permission", { id }),
+    listForAgent: (agentId: string) => invoke<AgentPermission[]>("list_agent_permissions", { agentId }),
   },
   runs: {
     start: (input: StartRunInput) => invoke<string>("start_agent_run", { input }),

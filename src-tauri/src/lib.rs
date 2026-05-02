@@ -84,6 +84,15 @@ pub fn run() {
             commands::run_commands::start_agent_run,
             commands::run_commands::stop_agent_run,
             commands::run_commands::list_active_runs,
+            commands::session_commands::create_session,
+            commands::session_commands::get_session,
+            commands::session_commands::update_session_status,
+            commands::session_commands::add_session_member,
+            commands::session_commands::list_session_members,
+            commands::permission_commands::grant_permission,
+            commands::permission_commands::check_permission,
+            commands::permission_commands::revoke_permission,
+            commands::permission_commands::list_agent_permissions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
