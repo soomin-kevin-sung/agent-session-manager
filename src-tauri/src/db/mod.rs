@@ -1,4 +1,12 @@
 pub mod schema;
+pub mod users;
+pub mod agents;
+pub mod workspaces;
+pub mod channels;
+pub mod sessions;
+pub mod messages;
+pub mod permissions;
+pub mod tasks;
 
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 use crate::AppResult;
