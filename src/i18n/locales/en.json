@@ -1,0 +1,48 @@
+{
+  "app": {
+    "title": "Agent Session Manager"
+  },
+  "workspace": {
+    "create": "Create Workspace",
+    "name": "Workspace Name",
+    "description": "Description"
+  },
+  "channel": {
+    "general": "General",
+    "dm": "Direct Messages",
+    "sessions": "Work Sessions"
+  },
+  "agent": {
+    "create": "Create Agent",
+    "name": "Name",
+    "role": "Role",
+    "runtime": "Runtime",
+    "claude": "Claude",
+    "codex": "Codex",
+    "status": {
+      "active": "Active",
+      "idle": "Idle",
+      "offline": "Offline"
+    },
+    "permissions": "Permissions"
+  },
+  "message": {
+    "placeholder": "Type a message...",
+    "send": "Send"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "save": "Save",
+    "search": "Search",
+    "settings": "Settings",
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "terminal": {
+    "title": "Terminal",
+    "open": "Open Terminal",
+    "close": "Close Terminal"
+  }
+}
