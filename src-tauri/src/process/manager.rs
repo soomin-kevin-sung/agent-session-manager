@@ -3,7 +3,7 @@ use tokio::process::Command;
 use tokio::sync::mpsc;
 
 use crate::runtime::adapter::{AgentRuntime, CommandSpec, RuntimeEvent};
-use super::io;
+use super::io::{self, ProcessLine};
 use super::registry::{ProcessRegistry, RunHandle, RunStatus};
 
 pub struct ProcessManager {
@@ -21,7 +21,8 @@ impl ProcessManager {
     /// The process lifecycle is fully managed:
     /// - stdout/stderr are streamed and parsed into RuntimeEvents
     /// - child.wait() is awaited to detect exit
-    /// - ProcessExited event is emitted with exit_code
+    /// - stdout/stderr reader tasks are awaited to drain remaining lines
+    /// - ProcessExited event is emitted with exit_code and was_cancelling
     /// - Registry entry is cleaned up
     pub async fn spawn(
         &self,
@@ -64,57 +65,90 @@ impl ProcessManager {
             message: "Failed to capture stderr".into(),
         })?;
 
-        // Raw lines channel
-        let (line_tx, mut line_rx) = mpsc::unbounded_channel::<String>();
+        // Raw lines channel (typed)
+        let (line_tx, mut line_rx) = mpsc::unbounded_channel::<ProcessLine>();
 
         // Parsed events channel
         let (event_tx, event_rx) = mpsc::unbounded_channel::<RuntimeEvent>();
 
-        // Spawn stdout reader
+        // Spawn stdout reader — keep JoinHandle for draining
         let stdout_tx = line_tx.clone();
-        tokio::spawn(io::stream_lines(stdout, stdout_tx));
+        let stdout_handle = tokio::spawn(io::stream_lines(stdout, stdout_tx));
 
-        // Spawn stderr reader
-        tokio::spawn(io::stream_stderr(stderr, line_tx));
+        // Spawn stderr reader — keep JoinHandle for draining
+        let stderr_handle = tokio::spawn(io::stream_stderr(stderr, line_tx));
 
         // Spawn parser task
         let event_tx_parse = event_tx.clone();
         tokio::spawn(async move {
-            while let Some(line) = line_rx.recv().await {
-                if line.starts_with("stderr:") {
-                    let _ = event_tx_parse.send(RuntimeEvent::RawLog {
-                        stream: "stderr".into(),
-                        line: line[7..].into(),
-                    });
-                } else {
-                    for event in runtime.parse_output_line(&line) {
-                        if event_tx_parse.send(event).is_err() {
-                            return;
+            while let Some(process_line) = line_rx.recv().await {
+                match process_line {
+                    ProcessLine::Stderr(line) => {
+                        let _ = event_tx_parse.send(RuntimeEvent::RawLog {
+                            stream: "stderr".into(),
+                            line,
+                        });
+                    }
+                    ProcessLine::Stdout(line) => {
+                        for event in runtime.parse_output_line(&line) {
+                            if event_tx_parse.send(event).is_err() {
+                                return;
+                            }
                         }
                     }
                 }
             }
         });
 
-        // Store handle
+        // Create kill channel
+        let (kill_tx, mut kill_rx) = mpsc::channel::<()>(1);
+
+        // Store handle with kill_tx
         self.registry.insert(run_id.clone(), RunHandle {
             run_id: run_id.clone(),
             agent_id,
             status: RunStatus::Running,
+            kill_tx: Some(kill_tx),
         }).await;
 
-        // Spawn child.wait() task -- THIS is the authoritative exit handler
+        // Spawn child.wait() task — THIS is the authoritative exit handler
         let registry = self.registry.clone();
         let run_id_wait = run_id.clone();
         tokio::spawn(async move {
-            let exit_status = child.wait().await;
-            let exit_code = exit_status.ok().and_then(|s| s.code());
+            // Wait for either the child to exit naturally or a kill signal
+            let exit_code = tokio::select! {
+                exit_status = child.wait() => {
+                    exit_status.ok().and_then(|s| s.code())
+                }
+                _ = kill_rx.recv() => {
+                    // Kill signal received — kill the child process
+                    let _ = child.kill().await;
+                    // Still wait for the child to fully exit
+                    let status = child.wait().await;
+                    status.ok().and_then(|s| s.code())
+                }
+            };
 
-            // Small delay to let I/O tasks flush remaining lines
+            // Drop the line_tx clone held by the wait task scope (the original
+            // was moved into stderr reader). The stdout/stderr readers hold their
+            // own clones; once those complete, line_rx will close and the parser
+            // will drain.
+            // (line_tx was already dropped when we moved clones to readers above)
+
+            // Wait for stdout/stderr reader tasks to complete (they end when
+            // the pipe closes after process exit)
+            let _ = stdout_handle.await;
+            let _ = stderr_handle.await;
+
+            // Brief delay for the parser to drain remaining lines
             tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
-            // Emit ProcessExited event
-            let _ = event_tx.send(RuntimeEvent::ProcessExited { exit_code });
+            // Check registry status before removing — was this a cancellation?
+            let was_cancelling = registry.get_status(&run_id_wait).await
+                == Some(RunStatus::Cancelling);
+
+            // Emit ProcessExited event with cancellation context
+            let _ = event_tx.send(RuntimeEvent::ProcessExited { exit_code, was_cancelling });
 
             // Mark completed in registry and remove
             registry.transition(&run_id_wait, RunStatus::Completed).await;
@@ -137,6 +171,9 @@ impl ProcessManager {
         let agent_id = self.registry.get_agent_id(run_id).await
             .unwrap_or_default();
 
+        // Send kill signal to the child process
+        self.registry.send_kill(run_id).await;
+
         Ok(agent_id)
     }
 
@@ -144,6 +181,7 @@ impl ProcessManager {
         let run_ids = self.registry.active_run_ids().await;
         for run_id in run_ids {
             self.registry.transition(&run_id, RunStatus::Cancelling).await;
+            self.registry.send_kill(&run_id).await;
             self.registry.remove(&run_id).await;
         }
     }

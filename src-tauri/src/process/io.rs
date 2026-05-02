@@ -2,23 +2,30 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{ChildStdout, ChildStderr};
 use tokio::sync::mpsc;
 
-/// Read stdout line-by-line and send each line to tx.
-pub async fn stream_lines(stdout: ChildStdout, tx: mpsc::UnboundedSender<String>) {
+/// Typed line output from child process I/O streams.
+#[derive(Debug)]
+pub enum ProcessLine {
+    Stdout(String),
+    Stderr(String),
+}
+
+/// Read stdout line-by-line and send each line as ProcessLine::Stdout.
+pub async fn stream_lines(stdout: ChildStdout, tx: mpsc::UnboundedSender<ProcessLine>) {
     let reader = BufReader::new(stdout);
     let mut lines = reader.lines();
     while let Ok(Some(line)) = lines.next_line().await {
-        if tx.send(line).is_err() {
+        if tx.send(ProcessLine::Stdout(line)).is_err() {
             break;
         }
     }
 }
 
-/// Read stderr line-by-line, prefix with "stderr:" and send to tx.
-pub async fn stream_stderr(stderr: ChildStderr, tx: mpsc::UnboundedSender<String>) {
+/// Read stderr line-by-line and send each line as ProcessLine::Stderr.
+pub async fn stream_stderr(stderr: ChildStderr, tx: mpsc::UnboundedSender<ProcessLine>) {
     let reader = BufReader::new(stderr);
     let mut lines = reader.lines();
     while let Ok(Some(line)) = lines.next_line().await {
-        if tx.send(format!("stderr:{}", line)).is_err() {
+        if tx.send(ProcessLine::Stderr(line)).is_err() {
             break;
         }
     }
@@ -39,13 +46,16 @@ mod tests {
             .expect("failed to spawn echo");
 
         let stdout = child.stdout.take().unwrap();
-        let (tx, mut rx) = mpsc::unbounded_channel::<String>();
+        let (tx, mut rx) = mpsc::unbounded_channel::<ProcessLine>();
 
         tokio::spawn(stream_lines(stdout, tx));
 
         let mut lines = vec![];
-        while let Some(line) = rx.recv().await {
-            lines.push(line);
+        while let Some(pl) = rx.recv().await {
+            match pl {
+                ProcessLine::Stdout(line) => lines.push(line),
+                ProcessLine::Stderr(_) => {}
+            }
         }
 
         assert!(!lines.is_empty());

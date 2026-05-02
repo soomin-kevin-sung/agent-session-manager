@@ -14,6 +14,7 @@ pub struct RunHandle {
     pub run_id: String,
     pub agent_id: String,
     pub status: RunStatus,
+    pub kill_tx: Option<tokio::sync::mpsc::Sender<()>>,
 }
 
 pub struct ProcessRegistry {
@@ -66,6 +67,17 @@ impl ProcessRegistry {
         self.handles.read().await.len()
     }
 
+    /// Send kill signal to a running process. Returns true if the signal was sent.
+    pub async fn send_kill(&self, run_id: &str) -> bool {
+        let map = self.handles.read().await;
+        if let Some(handle) = map.get(run_id) {
+            if let Some(ref tx) = handle.kill_tx {
+                return tx.try_send(()).is_ok();
+            }
+        }
+        false
+    }
+
     pub async fn active_run_ids(&self) -> Vec<String> {
         self.handles.read().await.keys().cloned().collect()
     }
@@ -82,6 +94,7 @@ mod tests {
             run_id: "r1".into(),
             agent_id: "a1".into(),
             status: RunStatus::Running,
+            kill_tx: None,
         }).await;
 
         // Valid: Running -> Cancelling

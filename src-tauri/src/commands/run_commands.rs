@@ -4,7 +4,6 @@ use tauri::{AppHandle, Emitter, State};
 use crate::{AppError, AppState};
 use crate::db;
 use crate::events::*;
-use crate::process::RunStatus;
 use crate::runtime::RuntimeEvent;
 use crate::runtime::registry::RuntimeRegistry;
 
@@ -66,75 +65,78 @@ pub async fn start_agent_run(
     let app_fwd = app.clone();
     let run_id_fwd = run_id.clone();
     let agent_id_fwd = agent.id.clone();
-    let registry = state.process_manager.registry.clone();
     let db_pool = state.db.clone();
 
     tokio::spawn(async move {
-        let mut cli_logs = Vec::<String>::new();
+        let run_id_clone = run_id_fwd.clone();
+        let agent_id_clone = agent_id_fwd.clone();
+        let mut channel_id: Option<String> = None;
+        let _ = &channel_id; // suppress unused warning
 
         while let Some(event) = event_rx.recv().await {
-            // Collect raw log lines for DB storage
-            match &event {
-                RuntimeEvent::RawLog { line, .. } => {
-                    cli_logs.push(line.clone());
-                }
-                RuntimeEvent::Message { content, .. } => {
-                    cli_logs.push(content.clone());
-                }
-                _ => {}
-            }
-
             // Check for ProcessExited — this drives DB status update
-            if let RuntimeEvent::ProcessExited { exit_code } = &event {
-                let status_at_exit = registry.get_status(&run_id_fwd).await;
-
-                // Determine final status based on cancellation state + exit code
-                let (final_status, event_name) = match status_at_exit {
-                    Some(RunStatus::Cancelling) => ("cancelled", EVENT_RUN_CANCELLED),
-                    _ => {
-                        if *exit_code == Some(0) {
-                            ("completed", EVENT_RUN_COMPLETED)
-                        } else {
-                            ("failed", EVENT_RUN_FAILED)
-                        }
-                    }
+            if let RuntimeEvent::ProcessExited { exit_code, was_cancelling } = &event {
+                // Determine final status based on was_cancelling + exit code
+                let (final_status, event_name) = if *was_cancelling {
+                    ("cancelled", EVENT_RUN_CANCELLED)
+                } else if *exit_code == Some(0) {
+                    ("completed", EVENT_RUN_COMPLETED)
+                } else {
+                    ("failed", EVENT_RUN_FAILED)
                 };
 
                 // Emit lifecycle event
                 let _ = app_fwd.emit(event_name, RunLifecyclePayload {
-                    run_id: run_id_fwd.clone(),
-                    agent_id: agent_id_fwd.clone(),
+                    run_id: run_id_clone.clone(),
+                    agent_id: agent_id_clone.clone(),
                     exit_code: *exit_code,
                     message: Some(format!("Run {} with exit code {:?}", final_status, exit_code)),
                 });
 
-                // Store CLI logs in DB as a message (best-effort)
-                if !cli_logs.is_empty() {
-                    let log_content = cli_logs.join("\n");
-                    let _ = db::messages::create(&db_pool, &db::messages::CreateMessage {
-                        channel_id: "system".into(), // system channel placeholder
-                        sender_type: "agent".into(),
-                        sender_user_id: None,
-                        sender_agent_id: Some(agent_id_fwd.clone()),
-                        content: log_content,
-                        message_type: "cli_log".into(),
-                        metadata: Some(serde_json::json!({
-                            "run_id": run_id_fwd,
-                            "status": final_status,
-                            "exit_code": exit_code,
-                        }).to_string()),
-                        parent_id: None,
-                        thread_root_id: None,
-                    }).await;
-                }
-
                 break;
+            }
+
+            // Store events in appropriate tables
+            match &event {
+                RuntimeEvent::Message { role: _, content } => {
+                    // Store agent messages as actual messages in the channel
+                    if let Some(ref ch_id) = channel_id {
+                        db::messages::create(&db_pool, &db::messages::CreateMessage {
+                            channel_id: ch_id.clone(),
+                            sender_type: "agent".into(),
+                            sender_agent_id: Some(agent_id_clone.clone()),
+                            sender_user_id: None,
+                            content: content.clone(),
+                            message_type: "chat".into(),
+                            metadata: None,
+                            parent_id: None,
+                            thread_root_id: None,
+                        }).await.ok();
+                    }
+                }
+                RuntimeEvent::RawLog { stream, line } => {
+                    // Store raw logs in cli_logs table
+                    let log_id = uuid::Uuid::new_v4().to_string();
+                    sqlx::query(
+                        "INSERT INTO cli_logs (id, agent_run_id, stream, content, sequence)
+                         VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(sequence), 0) + 1 FROM cli_logs WHERE agent_run_id = ?))"
+                    )
+                    .bind(&log_id)
+                    .bind(&run_id_clone)
+                    .bind(stream)
+                    .bind(line)
+                    .bind(&run_id_clone)
+                    .execute(&db_pool)
+                    .await
+                    .ok();
+                }
+                _ => {}
             }
 
             // Forward all other events to frontend
             let _ = app_fwd.emit(EVENT_AGENT_OUTPUT, AgentOutputPayload {
-                run_id: run_id_fwd.clone(),
-                agent_id: agent_id_fwd.clone(),
+                run_id: run_id_clone.clone(),
+                agent_id: agent_id_clone.clone(),
                 event,
             });
         }
@@ -151,11 +153,12 @@ pub async fn stop_agent_run(
 ) -> Result<(), AppError> {
     let agent_id = state.process_manager.kill(&run_id).await?;
 
-    let _ = app.emit(EVENT_RUN_CANCELLED, RunLifecyclePayload {
+    // Emit cancelling (not cancelled — cancelled is emitted when ProcessExited arrives)
+    let _ = app.emit(EVENT_RUN_CANCELLING, RunLifecyclePayload {
         run_id: run_id.clone(),
         agent_id,
         exit_code: None,
-        message: Some("Run cancelled by user".into()),
+        message: Some("Run cancellation requested by user".into()),
     });
 
     Ok(())

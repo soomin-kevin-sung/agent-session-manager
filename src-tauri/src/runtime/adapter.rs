@@ -49,7 +49,7 @@ pub enum RuntimeEvent {
     RawLog { stream: String, line: String },
 
     /// Emitted by process manager when child exits
-    ProcessExited { exit_code: Option<i32> },
+    ProcessExited { exit_code: Option<i32>, was_cancelling: bool },
 }
 
 /// Specification for spawning a CLI process.
