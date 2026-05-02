@@ -7,12 +7,15 @@ import { AgentCreationModal } from "@/components/agent/AgentCreationModal";
 import { useUIStore } from "@/stores/ui-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useAgentStore } from "@/stores/agent-store";
+import { useTauriEvents } from "@/hooks/useTauriEvents";
 import { useEffect } from "react";
 
 export function AppLayout() {
   const { showMemberPanel, showTerminalPanel } = useUIStore();
   const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
   const fetchAgents = useAgentStore((s) => s.fetchAgents);
+
+  useTauriEvents();
 
   useEffect(() => {
     fetchWorkspaces();
