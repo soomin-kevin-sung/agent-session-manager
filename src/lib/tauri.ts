@@ -24,8 +24,7 @@ export interface CreateAgentInput {
   model_name?: string;
   persona?: string;
   config?: string;
-  created_by_type: "user" | "agent";
-  created_by_id: string;
+  permissions: string[];  // e.g. ["create_agent", "execute_cli", "create_session"]
 }
 
 // Workspace types
@@ -181,9 +180,7 @@ export const api = {
     listMembers: (sessionId: string) => invoke<SessionMember[]>("list_session_members", { sessionId }),
   },
   permissions: {
-    grant: (input: { agent_id: string; scope_type: string; scope_id?: string; permission_type: string; granted_by_type: string; granted_by_id: string }) => invoke<AgentPermission>("grant_permission", { input }),
     check: (agentId: string, permissionType: string, scopeType: string, scopeId?: string) => invoke<boolean>("check_permission", { agentId, permissionType, scopeType, scopeId }),
-    revoke: (id: string) => invoke<void>("revoke_permission", { id }),
     listForAgent: (agentId: string) => invoke<AgentPermission[]>("list_agent_permissions", { agentId }),
   },
   runs: {

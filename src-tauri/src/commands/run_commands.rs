@@ -10,6 +10,7 @@ use crate::runtime::registry::RuntimeRegistry;
 #[derive(Debug, Deserialize)]
 pub struct StartRunInput {
     pub agent_id: String,
+    pub session_id: Option<String>,
     pub prompt: String,
     pub work_dir: Option<String>,
     pub max_turns: Option<u32>,
@@ -45,7 +46,21 @@ pub async fn start_agent_run(
     // 4. Generate run_id
     let run_id = uuid::Uuid::new_v4().to_string();
 
-    // 5. Spawn process
+    // 5. Insert agent_runs record BEFORE spawning (fixes FK violation for cli_logs)
+    let cli_args_json = serde_json::to_string(&spec.args).unwrap_or_default();
+    sqlx::query(
+        "INSERT INTO agent_runs (id, agent_id, session_id, cli_command, cli_args, process_status)
+         VALUES (?, ?, ?, ?, ?, 'starting')"
+    )
+    .bind(&run_id)
+    .bind(&agent.id)
+    .bind(&input.session_id)
+    .bind(&spec.program)
+    .bind(&cli_args_json)
+    .execute(&state.db)
+    .await?;
+
+    // 6. Spawn process
     let mut event_rx = state.process_manager.spawn(
         run_id.clone(),
         agent.id.clone(),
@@ -53,7 +68,13 @@ pub async fn start_agent_run(
         spec,
     ).await?;
 
-    // 6. Emit run:started
+    // 7. Update status to running after successful spawn
+    sqlx::query("UPDATE agent_runs SET process_status = 'running', started_at = datetime('now') WHERE id = ?")
+        .bind(&run_id)
+        .execute(&state.db)
+        .await?;
+
+    // 8. Emit run:started
     let _ = app.emit(EVENT_RUN_STARTED, RunLifecyclePayload {
         run_id: run_id.clone(),
         agent_id: agent.id.clone(),
@@ -61,7 +82,7 @@ pub async fn start_agent_run(
         message: None,
     });
 
-    // 7. Spawn event forwarding task
+    // 9. Spawn event forwarding task
     let app_fwd = app.clone();
     let run_id_fwd = run_id.clone();
     let agent_id_fwd = agent.id.clone();
@@ -84,6 +105,15 @@ pub async fn start_agent_run(
                 } else {
                     ("failed", EVENT_RUN_FAILED)
                 };
+
+                // Update agent_runs record with final status
+                sqlx::query("UPDATE agent_runs SET process_status = ?, exit_code = ?, ended_at = datetime('now') WHERE id = ?")
+                    .bind(final_status)
+                    .bind(exit_code)
+                    .bind(&run_id_clone)
+                    .execute(&db_pool)
+                    .await
+                    .ok();
 
                 // Emit lifecycle event
                 let _ = app_fwd.emit(event_name, RunLifecyclePayload {
@@ -152,6 +182,13 @@ pub async fn stop_agent_run(
     run_id: String,
 ) -> Result<(), AppError> {
     let agent_id = state.process_manager.kill(&run_id).await?;
+
+    // Update DB status to cancelling
+    sqlx::query("UPDATE agent_runs SET process_status = 'cancelling' WHERE id = ?")
+        .bind(&run_id)
+        .execute(&state.db)
+        .await
+        .ok();
 
     // Emit cancelling (not cancelled — cancelled is emitted when ProcessExited arrives)
     let _ = app.emit(EVENT_RUN_CANCELLING, RunLifecyclePayload {

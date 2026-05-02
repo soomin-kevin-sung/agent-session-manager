@@ -15,6 +15,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import type { CreateAgentInput } from "@/lib/tauri";
 
+const AVAILABLE_PERMISSIONS = [
+  { key: "execute_cli", label: "Execute CLI" },
+  { key: "create_agent", label: "Create Agent" },
+  { key: "create_session", label: "Create Session" },
+  { key: "assign_task", label: "Assign Task" },
+  { key: "review", label: "Review" },
+] as const;
+
 export function AgentCreationModal() {
   const { t } = useTranslation();
   const { showAgentCreationModal, setAgentCreationModal } = useUIStore();
@@ -26,7 +34,16 @@ export function AgentCreationModal() {
   );
   const [modelName, setModelName] = useState("");
   const [persona, setPersona] = useState("");
+  const [permissions, setPermissions] = useState<string[]>(["execute_cli"]);
   const [submitting, setSubmitting] = useState(false);
+
+  const togglePermission = (perm: string) => {
+    setPermissions((prev) =>
+      prev.includes(perm)
+        ? prev.filter((p) => p !== perm)
+        : [...prev, perm]
+    );
+  };
 
   const handleCreate = async () => {
     if (!name.trim()) return;
@@ -38,8 +55,7 @@ export function AgentCreationModal() {
         provider: runtimeType === "claude_cli" ? "anthropic" : "openai",
         model_name: modelName.trim() || undefined,
         persona: persona.trim() || undefined,
-        created_by_type: "user",
-        created_by_id: "default",
+        permissions,
       };
       await createAgent(input);
       resetForm();
@@ -54,6 +70,7 @@ export function AgentCreationModal() {
     setRuntimeType("claude_cli");
     setModelName("");
     setPersona("");
+    setPermissions(["execute_cli"]);
   };
 
   return (
@@ -128,6 +145,29 @@ export function AgentCreationModal() {
               placeholder='{"role": "developer", ...}'
               rows={3}
             />
+          </div>
+
+          {/* Permissions */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-zinc-400">
+              Permissions
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {AVAILABLE_PERMISSIONS.map((perm) => (
+                <label
+                  key={perm.key}
+                  className="flex items-center gap-1.5 rounded border border-zinc-700 px-2 py-1 text-xs cursor-pointer hover:bg-zinc-800"
+                >
+                  <input
+                    type="checkbox"
+                    checked={permissions.includes(perm.key)}
+                    onChange={() => togglePermission(perm.key)}
+                    className="rounded"
+                  />
+                  {perm.label}
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 

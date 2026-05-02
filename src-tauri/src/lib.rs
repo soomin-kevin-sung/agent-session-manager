@@ -50,26 +50,31 @@ pub fn run() {
 
                 // Create default user if none exists
                 let users = db::users::list(&pool).await.unwrap_or_default();
-                if users.is_empty() {
-                    db::users::create(&pool, &db::users::CreateUser {
+                let default_user_id = if users.is_empty() {
+                    match db::users::create(&pool, &db::users::CreateUser {
                         display_name: "User".into(),
-                    }).await.ok();
-                }
+                    }).await {
+                        Ok(user) => user.id,
+                        Err(e) => {
+                            log::error!("Failed to create default user: {}", e);
+                            String::new()
+                        }
+                    }
+                } else {
+                    users[0].id.clone()
+                };
 
                 // Create default workspace if none exists
                 let workspaces = db::workspaces::list(&pool).await.unwrap_or_default();
-                if workspaces.is_empty() {
-                    let default_user_id = db::users::list(&pool).await.unwrap_or_default()
-                        .first()
-                        .map(|u| u.id.clone())
-                        .unwrap_or_default();
-
-                    db::workspaces::create(&pool, &db::workspaces::CreateWorkspace {
+                if workspaces.is_empty() && !default_user_id.is_empty() {
+                    if let Err(e) = db::workspaces::create(&pool, &db::workspaces::CreateWorkspace {
                         name: "Default".into(),
                         description: Some("Default workspace".into()),
                         created_by_type: "user".into(),
                         created_by_id: default_user_id.clone(),
-                    }).await.ok();
+                    }).await {
+                        log::error!("Failed to create default workspace: {}", e);
+                    }
                 }
 
                 let process_manager = process::ProcessManager::new();
@@ -107,9 +112,7 @@ pub fn run() {
             commands::session_commands::update_session_status,
             commands::session_commands::add_session_member,
             commands::session_commands::list_session_members,
-            commands::permission_commands::grant_permission,
             commands::permission_commands::check_permission,
-            commands::permission_commands::revoke_permission,
             commands::permission_commands::list_agent_permissions,
         ])
         .run(tauri::generate_context!())

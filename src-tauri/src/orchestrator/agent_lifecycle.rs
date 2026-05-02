@@ -6,6 +6,7 @@ pub struct AgentLifecycle;
 
 impl AgentLifecycle {
     /// Create an agent on behalf of another agent (with permission validation).
+    // TODO: wrap in transaction for atomicity (requires refactoring CRUD fns to accept Pool or Transaction)
     pub async fn create_agent_by_agent(
         pool: &DbPool,
         creator_agent_id: &str,
@@ -21,25 +22,37 @@ impl AgentLifecycle {
         // 3. Create the agent
         let agent = db::agents::create(pool, input).await?;
 
-        // 4. Record the relationship
-        sqlx::query(
+        // 4. Record the relationship — clean up agent on failure
+        if let Err(e) = sqlx::query(
             "INSERT INTO agent_relationships (parent_agent_id, child_agent_id, relationship) VALUES (?, ?, 'created')"
         )
         .bind(creator_agent_id)
         .bind(&agent.id)
         .execute(pool)
-        .await?;
+        .await {
+            db::agents::delete(pool, &agent.id).await.ok();
+            return Err(e.into());
+        }
 
-        // 5. Grant permissions to the new agent
+        // 5. Grant permissions to the new agent — clean up on failure
         for perm in child_permissions {
-            db::permissions::grant(pool, &GrantPermission {
+            if let Err(e) = db::permissions::grant(pool, &GrantPermission {
                 agent_id: agent.id.clone(),
                 scope_type: "global".into(),
                 scope_id: None,
                 permission_type: perm.clone(),
                 granted_by_type: "agent".into(),
                 granted_by_id: creator_agent_id.into(),
-            }).await?;
+            }).await {
+                // Best-effort cleanup: delete relationship and agent
+                sqlx::query("DELETE FROM agent_relationships WHERE child_agent_id = ?")
+                    .bind(&agent.id)
+                    .execute(pool)
+                    .await
+                    .ok();
+                db::agents::delete(pool, &agent.id).await.ok();
+                return Err(e);
+            }
         }
 
         Ok(agent)
