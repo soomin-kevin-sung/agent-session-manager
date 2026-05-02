@@ -56,6 +56,22 @@ pub fn run() {
                     }).await.ok();
                 }
 
+                // Create default workspace if none exists
+                let workspaces = db::workspaces::list(&pool).await.unwrap_or_default();
+                if workspaces.is_empty() {
+                    let default_user_id = db::users::list(&pool).await.unwrap_or_default()
+                        .first()
+                        .map(|u| u.id.clone())
+                        .unwrap_or_default();
+
+                    db::workspaces::create(&pool, &db::workspaces::CreateWorkspace {
+                        name: "Default".into(),
+                        description: Some("Default workspace".into()),
+                        created_by_type: "user".into(),
+                        created_by_id: default_user_id.clone(),
+                    }).await.ok();
+                }
+
                 let process_manager = process::ProcessManager::new();
                 let runtime_registry = runtime::registry::RuntimeRegistry::new(
                     settings.claude_cli_path.clone(),

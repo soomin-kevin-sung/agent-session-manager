@@ -4,6 +4,7 @@ import { ChatArea } from "@/components/chat/ChatArea";
 import { MemberPanel } from "@/components/agent/MemberPanel";
 import { TerminalPanel } from "@/components/terminal/TerminalPanel";
 import { AgentCreationModal } from "@/components/agent/AgentCreationModal";
+import { WorkspaceCreationModal } from "@/components/workspace/WorkspaceCreationModal";
 import { useUIStore } from "@/stores/ui-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useAgentStore } from "@/stores/agent-store";
@@ -32,6 +33,7 @@ export function AppLayout() {
       </div>
       {showMemberPanel && <MemberPanel />}
       <AgentCreationModal />
+      <WorkspaceCreationModal />
     </div>
   );
 }
