@@ -5,18 +5,24 @@
   "workspace": {
     "create": "Create Workspace",
     "name": "Workspace Name",
-    "description": "Description"
+    "description": "Description",
+    "add": "Add Workspace"
   },
   "channel": {
     "general": "General",
     "dm": "Direct Messages",
-    "sessions": "Work Sessions"
+    "sessions": "Work Sessions",
+    "create": "Create Channel",
+    "name": "Channel Name",
+    "noChannel": "Select a channel"
   },
   "agent": {
     "create": "Create Agent",
     "name": "Name",
     "role": "Role",
     "runtime": "Runtime",
+    "model": "Model",
+    "persona": "Persona",
     "claude": "Claude",
     "codex": "Codex",
     "status": {
@@ -24,25 +30,35 @@
       "idle": "Idle",
       "offline": "Offline"
     },
-    "permissions": "Permissions"
+    "permissions": "Permissions",
+    "members": "Members",
+    "noAgents": "No agents"
   },
   "message": {
     "placeholder": "Type a message...",
-    "send": "Send"
+    "send": "Send",
+    "noMessages": "No messages yet. Start the conversation!",
+    "today": "Today",
+    "system": "System"
   },
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "create": "Create",
     "delete": "Delete",
     "save": "Save",
     "search": "Search",
     "settings": "Settings",
     "online": "Online",
-    "offline": "Offline"
+    "offline": "Offline",
+    "close": "Close",
+    "user": "User"
   },
   "terminal": {
     "title": "Terminal",
     "open": "Open Terminal",
-    "close": "Close Terminal"
+    "close": "Close Terminal",
+    "noOutput": "No terminal output.",
+    "session": "Session"
   }
 }
