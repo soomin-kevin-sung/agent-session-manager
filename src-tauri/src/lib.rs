@@ -7,6 +7,7 @@ mod runtime;
 mod process;
 mod events;
 mod security;
+mod orchestrator;
 
 pub use errors::{AppError, AppResult, IpcError};
 pub use db::DbPool;
