@@ -40,6 +40,7 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
                   variant="ghost"
                   size="icon-sm"
                   onClick={toggleTerminalPanel}
+                  aria-label={t("terminal.title")}
                 />
               }
             >
@@ -55,6 +56,7 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
                   variant="ghost"
                   size="icon-sm"
                   onClick={toggleMemberPanel}
+                  aria-label={t("agent.members")}
                 />
               }
             >
@@ -65,7 +67,7 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
 
           <Tooltip>
             <TooltipTrigger
-              render={<Button variant="ghost" size="icon-sm" />}
+              render={<Button variant="ghost" size="icon-sm" aria-label={t("common.search")} />}
             >
               <Search className="size-4 text-zinc-400" />
             </TooltipTrigger>

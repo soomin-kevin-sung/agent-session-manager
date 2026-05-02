@@ -2,27 +2,45 @@ import { create } from "zustand";
 import { api, type Message } from "@/lib/tauri";
 
 interface MessageState {
-  messages: Message[];
-  loading: boolean;
+  messagesByChannel: Record<string, Message[]>;
+  loadingChannels: Set<string>;
 
   fetchMessages: (channelId: string) => Promise<void>;
-  addMessage: (message: Message) => void;
+  addMessage: (channelId: string, message: Message) => void;
   sendMessage: (channelId: string, content: string) => Promise<void>;
-  clearMessages: () => void;
+  getMessages: (channelId: string) => Message[];
+  clearMessages: (channelId: string) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
-  messages: [],
-  loading: false,
+  messagesByChannel: {},
+  loadingChannels: new Set(),
 
   fetchMessages: async (channelId) => {
-    set({ loading: true });
+    set((state) => ({
+      loadingChannels: new Set(state.loadingChannels).add(channelId),
+    }));
     const messages = await api.messages.list(channelId, 100);
-    set({ messages: messages.reverse(), loading: false });
+    set((state) => {
+      const loading = new Set(state.loadingChannels);
+      loading.delete(channelId);
+      return {
+        messagesByChannel: {
+          ...state.messagesByChannel,
+          [channelId]: messages.reverse(),
+        },
+        loadingChannels: loading,
+      };
+    });
   },
 
-  addMessage: (message) => {
-    set((state) => ({ messages: [...state.messages, message] }));
+  addMessage: (channelId, message) => {
+    set((state) => ({
+      messagesByChannel: {
+        ...state.messagesByChannel,
+        [channelId]: [...(state.messagesByChannel[channelId] ?? []), message],
+      },
+    }));
   },
 
   sendMessage: async (channelId, content) => {
@@ -32,8 +50,16 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       content,
       message_type: "chat",
     });
-    get().addMessage(msg);
+    get().addMessage(channelId, msg);
   },
 
-  clearMessages: () => set({ messages: [] }),
+  getMessages: (channelId) => get().messagesByChannel[channelId] ?? [],
+
+  clearMessages: (channelId) => {
+    set((state) => {
+      const updated = { ...state.messagesByChannel };
+      delete updated[channelId];
+      return { messagesByChannel: updated };
+    });
+  },
 }));

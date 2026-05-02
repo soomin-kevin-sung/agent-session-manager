@@ -74,6 +74,7 @@ export function ChannelSidebar() {
               <button
                 onClick={() => handleCreateChannel("dm")}
                 className="text-zinc-400 hover:text-zinc-200"
+                aria-label={t("agent.create")}
               >
                 <Plus className="size-4" />
               </button>
@@ -115,6 +116,7 @@ export function ChannelSidebar() {
               <button
                 onClick={() => handleCreateChannel("group")}
                 className="text-zinc-400 hover:text-zinc-200"
+                aria-label={t("channel.create")}
               >
                 <Plus className="size-4" />
               </button>

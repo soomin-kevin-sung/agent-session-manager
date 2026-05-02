@@ -10,7 +10,9 @@ interface MessageListProps {
 
 export function MessageList({ channelId }: MessageListProps) {
   const { t } = useTranslation();
-  const { messages, loading, fetchMessages } = useMessageStore();
+  const messages = useMessageStore((s) => s.getMessages(channelId));
+  const loading = useMessageStore((s) => s.loadingChannels.has(channelId));
+  const fetchMessages = useMessageStore((s) => s.fetchMessages);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -75,6 +75,7 @@ export function WorkspaceSidebar() {
           <TooltipTrigger
             className="flex size-10 items-center justify-center rounded-full bg-zinc-800 text-emerald-400 transition-all hover:rounded-2xl hover:bg-emerald-600 hover:text-white"
             onClick={() => setWorkspaceCreationModal(true)}
+            aria-label={t("workspace.add")}
           >
             <Plus className="size-5" />
           </TooltipTrigger>
@@ -86,7 +87,10 @@ export function WorkspaceSidebar() {
         <div className="flex-1" />
 
         <Tooltip>
-          <TooltipTrigger className="flex size-10 items-center justify-center rounded-full text-zinc-400 transition-colors hover:text-zinc-100">
+          <TooltipTrigger
+            className="flex size-10 items-center justify-center rounded-full text-zinc-400 transition-colors hover:text-zinc-100"
+            aria-label={t("common.settings")}
+          >
             <Settings className="size-5" />
           </TooltipTrigger>
           <TooltipContent side="right">

@@ -29,8 +29,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   setActiveWorkspace: async (id: string) => {
-    set({ activeWorkspaceId: id, activeChannelId: null });
+    set({ activeWorkspaceId: id, activeChannelId: null, channels: [] });
     const channels = await api.channels.list(id);
+    // Guard: only update if this workspace is still active
+    if (get().activeWorkspaceId !== id) return;
     set({ channels });
     if (channels.length > 0) {
       set({ activeChannelId: channels[0].id });
