@@ -7,16 +7,32 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
+# Tauri
+src-tauri/target/
+
+# App data
+*.db
+*.db-wal
+*.db-shm
+
+# Superpowers brainstorm sessions
+.superpowers/
+
+# Node
+node_modules/
+dist/
 dist-ssr
 *.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# IDE
+.vscode/
+.idea/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Editor directories and files
 *.suo
 *.ntvs*
 *.njsproj
