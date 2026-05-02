@@ -4,6 +4,8 @@ mod config;
 mod app_state;
 mod commands;
 mod runtime;
+mod process;
+mod events;
 
 pub use errors::{AppError, AppResult, IpcError};
 pub use db::DbPool;
@@ -52,9 +54,17 @@ pub fn run() {
                     }).await.ok();
                 }
 
+                let process_manager = process::ProcessManager::new();
+                let runtime_registry = runtime::registry::RuntimeRegistry::new(
+                    settings.claude_cli_path.clone(),
+                    settings.codex_cli_path.clone(),
+                );
+
                 app_handle.manage(AppState {
                     db: pool,
                     settings,
+                    process_manager,
+                    runtime_registry,
                 });
             });
             Ok(())
@@ -71,6 +81,9 @@ pub fn run() {
             commands::workspace_commands::list_channels,
             commands::message_commands::send_message,
             commands::message_commands::list_messages,
+            commands::run_commands::start_agent_run,
+            commands::run_commands::stop_agent_run,
+            commands::run_commands::list_active_runs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

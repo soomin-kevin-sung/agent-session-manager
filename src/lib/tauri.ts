@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 // Agent types
 export interface Agent {
@@ -64,6 +65,38 @@ export interface Message {
   created_at: string;
 }
 
+// Run types
+export interface StartRunInput {
+  agent_id: string;
+  prompt: string;
+  work_dir?: string;
+  max_turns?: number;
+  allowed_tools?: string[];
+  extra_args?: string[];
+}
+
+export interface AgentOutputPayload {
+  run_id: string;
+  agent_id: string;
+  event: Record<string, unknown>;
+}
+
+export interface RunLifecyclePayload {
+  run_id: string;
+  agent_id: string;
+  exit_code: number | null;
+  message: string | null;
+}
+
+// Event constants
+export const EVENTS = {
+  AGENT_OUTPUT: "agent:output",
+  RUN_STARTED: "run:started",
+  RUN_COMPLETED: "run:completed",
+  RUN_FAILED: "run:failed",
+  RUN_CANCELLED: "run:cancelled",
+} as const;
+
 // API functions
 export const api = {
   agents: {
@@ -91,4 +124,23 @@ export const api = {
     list: (channelId: string, limit?: number) =>
       invoke<Message[]>("list_messages", { channelId, limit }),
   },
+  runs: {
+    start: (input: StartRunInput) => invoke<string>("start_agent_run", { input }),
+    stop: (runId: string) => invoke<void>("stop_agent_run", { runId }),
+    listActive: () => invoke<string[]>("list_active_runs"),
+  },
+};
+
+// Event listeners
+export const events = {
+  onAgentOutput: (handler: (payload: AgentOutputPayload) => void): Promise<UnlistenFn> =>
+    listen<AgentOutputPayload>(EVENTS.AGENT_OUTPUT, (e) => handler(e.payload)),
+  onRunStarted: (handler: (payload: RunLifecyclePayload) => void): Promise<UnlistenFn> =>
+    listen<RunLifecyclePayload>(EVENTS.RUN_STARTED, (e) => handler(e.payload)),
+  onRunCompleted: (handler: (payload: RunLifecyclePayload) => void): Promise<UnlistenFn> =>
+    listen<RunLifecyclePayload>(EVENTS.RUN_COMPLETED, (e) => handler(e.payload)),
+  onRunFailed: (handler: (payload: RunLifecyclePayload) => void): Promise<UnlistenFn> =>
+    listen<RunLifecyclePayload>(EVENTS.RUN_FAILED, (e) => handler(e.payload)),
+  onRunCancelled: (handler: (payload: RunLifecyclePayload) => void): Promise<UnlistenFn> =>
+    listen<RunLifecyclePayload>(EVENTS.RUN_CANCELLED, (e) => handler(e.payload)),
 };
