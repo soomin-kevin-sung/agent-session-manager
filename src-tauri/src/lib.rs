@@ -3,6 +3,7 @@ mod db;
 mod config;
 mod app_state;
 mod commands;
+mod runtime;
 
 pub use errors::{AppError, AppResult, IpcError};
 pub use db::DbPool;
