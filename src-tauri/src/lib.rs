@@ -1,4 +1,5 @@
 mod errors;
+mod db;
 
 pub use errors::{AppError, AppResult, IpcError};
 
