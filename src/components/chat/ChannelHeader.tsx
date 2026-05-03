@@ -28,7 +28,7 @@ export function ChannelHeader({ channel }: ChannelHeaderProps) {
             <span className="size-2 rounded-full bg-emerald-400" />
           )}
           <h3 className="text-sm font-semibold text-zinc-100">
-            {channel.name}
+            {channel.name.replace(/\s*\[.*\]$/, "")}
           </h3>
         </div>
 
