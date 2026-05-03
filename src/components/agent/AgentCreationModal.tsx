@@ -119,7 +119,10 @@ export function AgentCreationModal() {
   return (
     <Dialog
       open={showAgentCreationModal}
-      onOpenChange={setAgentCreationModal}
+      onOpenChange={(open) => {
+        if (!open) resetForm();
+        setAgentCreationModal(open);
+      }}
     >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>

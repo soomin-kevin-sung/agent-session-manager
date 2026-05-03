@@ -25,7 +25,10 @@ export function WorkspaceCreationModal() {
   };
 
   return (
-    <Dialog open={show} onOpenChange={setShow}>
+    <Dialog open={show} onOpenChange={(open) => {
+      if (!open) { setName(""); setDescription(""); }
+      setShow(open);
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("workspace.create")}</DialogTitle>

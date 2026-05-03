@@ -70,7 +70,10 @@ export function SessionCreationModal() {
   return (
     <Dialog
       open={showSessionCreationModal}
-      onOpenChange={setSessionCreationModal}
+      onOpenChange={(open) => {
+        if (!open) resetForm();
+        setSessionCreationModal(open);
+      }}
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
