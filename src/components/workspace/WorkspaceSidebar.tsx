@@ -52,7 +52,7 @@ export function WorkspaceSidebar() {
             onClick={goHome}
           >
             {isHome && (
-              <span className="absolute -left-[6px] h-8 w-1 rounded-r-full bg-zinc-100" />
+              <span className="absolute -left-4 h-8 w-1 rounded-r-full bg-zinc-100" />
             )}
             <div
               className={`flex size-10 items-center justify-center transition-all ${
@@ -78,7 +78,7 @@ export function WorkspaceSidebar() {
                 onClick={() => setActiveWorkspace(ws.id)}
               >
                 {isActive && (
-                  <span className="absolute -left-[6px] h-8 w-1 rounded-r-full bg-zinc-100" />
+                  <span className="absolute -left-4 h-8 w-1 rounded-r-full bg-zinc-100" />
                 )}
                 <div
                   className={`flex size-10 items-center justify-center text-sm font-semibold text-white transition-all ${getWorkspaceColor(i)} ${
