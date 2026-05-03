@@ -38,15 +38,19 @@ const GROUPS = [...new Set(ALL_MODELS.map((m) => m.group))];
 interface Preset {
   id: string;
   key: string;
+  defaultPermissions?: string[];
 }
+
+const ALL_PERMISSIONS = ["execute_cli", "create_agent", "create_session", "assign_task", "review"];
 
 const PRESETS: Preset[] = [
   { id: "custom", key: "custom" },
+  { id: "manager", key: "manager", defaultPermissions: ALL_PERMISSIONS },
   { id: "developer", key: "developer" },
   { id: "frontend-developer", key: "frontendDeveloper" },
   { id: "backend-developer", key: "backendDeveloper" },
   { id: "code-reviewer", key: "codeReviewer" },
-  { id: "project-manager", key: "projectManager" },
+  { id: "project-manager", key: "projectManager", defaultPermissions: ["create_agent", "create_session", "assign_task", "review"] },
   { id: "devops-engineer", key: "devopsEngineer" },
   { id: "qa-engineer", key: "qaEngineer" },
 ];
@@ -103,11 +107,14 @@ export function AgentCreationModal() {
       setRole("");
       setExpertise("");
       setDescription("");
+      setPermissions(["execute_cli"]);
     } else {
       const values = getPresetValues(presetId);
       setRole(values.role);
       setExpertise(values.expertise);
       setDescription(values.description);
+      const preset = PRESETS.find((p) => p.id === presetId);
+      setPermissions(preset?.defaultPermissions ?? ["execute_cli"]);
     }
   };
 

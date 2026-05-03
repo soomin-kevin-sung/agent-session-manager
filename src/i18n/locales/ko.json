@@ -54,6 +54,12 @@
     "presetReset": "되돌리기",
     "presets": {
       "custom": { "label": "직접 입력" },
+      "manager": {
+        "label": "관리자",
+        "role": "관리자",
+        "expertise": "조직 구성, 작업 분배, 에이전트 관리, 프로젝트 총괄",
+        "description": "사용자의 지시를 받아 목표를 달성합니다. 에이전트를 생성하고 작업을 분배하며 전체 프로젝트를 조율합니다."
+      },
       "developer": {
         "label": "개발자",
         "role": "개발자",

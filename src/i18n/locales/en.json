@@ -54,6 +54,12 @@
     "presetReset": "reset",
     "presets": {
       "custom": { "label": "Custom" },
+      "manager": {
+        "label": "Manager",
+        "role": "Manager",
+        "expertise": "Team organization, task distribution, agent management, project oversight",
+        "description": "Receives instructions from the user and achieves goals. Creates agents, distributes tasks, and coordinates the entire project."
+      },
       "developer": {
         "label": "Developer",
         "role": "Developer",
