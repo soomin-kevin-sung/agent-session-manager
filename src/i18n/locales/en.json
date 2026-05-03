@@ -48,7 +48,55 @@
     },
     "permissions": "Permissions",
     "members": "Members",
-    "noAgents": "No agents"
+    "noAgents": "No agents",
+    "presetLabel": "Preset",
+    "presetModified": "modified",
+    "presetReset": "reset",
+    "presets": {
+      "custom": { "label": "Custom" },
+      "developer": {
+        "label": "Developer",
+        "role": "Developer",
+        "expertise": "Full-stack development, code design, debugging",
+        "description": "Writes code and solves technical problems"
+      },
+      "frontendDeveloper": {
+        "label": "Frontend Developer",
+        "role": "Frontend Developer",
+        "expertise": "React, TypeScript, CSS, UI/UX",
+        "description": "Implements UI components and improves user experience"
+      },
+      "backendDeveloper": {
+        "label": "Backend Developer",
+        "role": "Backend Developer",
+        "expertise": "API design, databases, server architecture",
+        "description": "Implements server logic, APIs, and manages data"
+      },
+      "codeReviewer": {
+        "label": "Code Reviewer",
+        "role": "Code Reviewer",
+        "expertise": "Code quality, security, performance optimization, best practices",
+        "description": "Reviews code and improves quality and security"
+      },
+      "projectManager": {
+        "label": "Project Manager",
+        "role": "Project Manager",
+        "expertise": "Project planning, scheduling, team coordination",
+        "description": "Plans projects and coordinates work between agents"
+      },
+      "devopsEngineer": {
+        "label": "DevOps Engineer",
+        "role": "DevOps Engineer",
+        "expertise": "CI/CD, Docker, infrastructure automation, monitoring",
+        "description": "Builds deployment pipelines and manages infrastructure"
+      },
+      "qaEngineer": {
+        "label": "QA Engineer",
+        "role": "QA Engineer",
+        "expertise": "Test automation, E2E testing, bug analysis",
+        "description": "Writes and runs tests to ensure software quality"
+      }
+    }
   },
   "message": {
     "placeholder": "Type a message...",

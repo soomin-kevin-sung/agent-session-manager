@@ -35,15 +35,20 @@ const ALL_MODELS: ModelOption[] = [
 
 const GROUPS = [...new Set(ALL_MODELS.map((m) => m.group))];
 
-const ROLE_PRESETS = [
-  "developer",
-  "frontend-developer",
-  "backend-developer",
-  "code-reviewer",
-  "project-manager",
-  "devops-engineer",
-  "qa-engineer",
-  "technical-writer",
+interface Preset {
+  id: string;
+  key: string;
+}
+
+const PRESETS: Preset[] = [
+  { id: "custom", key: "custom" },
+  { id: "developer", key: "developer" },
+  { id: "frontend-developer", key: "frontendDeveloper" },
+  { id: "backend-developer", key: "backendDeveloper" },
+  { id: "code-reviewer", key: "codeReviewer" },
+  { id: "project-manager", key: "projectManager" },
+  { id: "devops-engineer", key: "devopsEngineer" },
+  { id: "qa-engineer", key: "qaEngineer" },
 ];
 
 const AVAILABLE_PERMISSIONS = [
@@ -61,6 +66,8 @@ export function AgentCreationModal() {
 
   const [name, setName] = useState("");
   const [selectedModel, setSelectedModel] = useState(ALL_MODELS[0].value);
+  const [selectedPreset, setSelectedPreset] = useState<string>("custom");
+  const [isModified, setIsModified] = useState(false);
   const [role, setRole] = useState("");
   const [expertise, setExpertise] = useState("");
   const [description, setDescription] = useState("");
@@ -77,6 +84,51 @@ export function AgentCreationModal() {
     );
   };
 
+  const getPresetValues = (presetId: string) => {
+    const preset = PRESETS.find((p) => p.id === presetId);
+    if (!preset || preset.id === "custom") {
+      return { role: "", expertise: "", description: "" };
+    }
+    return {
+      role: t(`agent.presets.${preset.key}.role`),
+      expertise: t(`agent.presets.${preset.key}.expertise`),
+      description: t(`agent.presets.${preset.key}.description`),
+    };
+  };
+
+  const handlePresetChange = (presetId: string) => {
+    setSelectedPreset(presetId);
+    setIsModified(false);
+    if (presetId === "custom") {
+      setRole("");
+      setExpertise("");
+      setDescription("");
+    } else {
+      const values = getPresetValues(presetId);
+      setRole(values.role);
+      setExpertise(values.expertise);
+      setDescription(values.description);
+    }
+  };
+
+  const checkModified = (newRole: string, newExpertise: string, newDescription: string) => {
+    if (selectedPreset === "custom") return;
+    const defaults = getPresetValues(selectedPreset);
+    const modified =
+      newRole !== defaults.role ||
+      newExpertise !== defaults.expertise ||
+      newDescription !== defaults.description;
+    setIsModified(modified);
+  };
+
+  const handleResetToPreset = () => {
+    const values = getPresetValues(selectedPreset);
+    setRole(values.role);
+    setExpertise(values.expertise);
+    setDescription(values.description);
+    setIsModified(false);
+  };
+
   const buildPersonaJson = (): string | undefined => {
     const persona: Record<string, string> = {};
     if (role.trim()) persona.role = role.trim();
@@ -90,6 +142,8 @@ export function AgentCreationModal() {
   const resetForm = () => {
     setName("");
     setSelectedModel(ALL_MODELS[0].value);
+    setSelectedPreset("custom");
+    setIsModified(false);
     setRole("");
     setExpertise("");
     setDescription("");
@@ -188,6 +242,44 @@ export function AgentCreationModal() {
               {t("agent.persona")}
             </legend>
 
+            {/* Preset */}
+            <div>
+              <label
+                htmlFor="agent-preset"
+                className="mb-1 block text-xs text-zinc-500"
+              >
+                {t("agent.presetLabel")}
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  id="agent-preset"
+                  value={selectedPreset}
+                  onChange={(e) => handlePresetChange(e.target.value)}
+                  className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus-visible:border-zinc-600 focus-visible:ring-1 focus-visible:ring-sky-500/40"
+                >
+                  {PRESETS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {t(`agent.presets.${p.key}.label`)}
+                    </option>
+                  ))}
+                </select>
+                {isModified && selectedPreset !== "custom" && (
+                  <>
+                    <span className="shrink-0 text-xs text-zinc-500">
+                      {t("agent.presetModified")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleResetToPreset}
+                      className="shrink-0 cursor-pointer text-xs text-emerald-400 hover:text-emerald-300"
+                    >
+                      {t("agent.presetReset")}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
             {/* Role */}
             <div>
               <label
@@ -199,15 +291,12 @@ export function AgentCreationModal() {
               <Input
                 id="agent-role"
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => {
+                  setRole(e.target.value);
+                  checkModified(e.target.value, expertise, description);
+                }}
                 placeholder={t("agent.rolePlaceholder")}
-                list="role-presets"
               />
-              <datalist id="role-presets">
-                {ROLE_PRESETS.map((r) => (
-                  <option key={r} value={r} />
-                ))}
-              </datalist>
             </div>
 
             {/* Expertise */}
@@ -221,7 +310,10 @@ export function AgentCreationModal() {
               <Input
                 id="agent-expertise"
                 value={expertise}
-                onChange={(e) => setExpertise(e.target.value)}
+                onChange={(e) => {
+                  setExpertise(e.target.value);
+                  checkModified(role, e.target.value, description);
+                }}
                 placeholder={t("agent.expertisePlaceholder")}
               />
             </div>
@@ -237,7 +329,10 @@ export function AgentCreationModal() {
               <Textarea
                 id="agent-description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  checkModified(role, expertise, e.target.value);
+                }}
                 placeholder={t("agent.descriptionPlaceholder")}
                 rows={2}
               />

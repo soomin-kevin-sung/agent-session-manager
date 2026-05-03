@@ -48,7 +48,55 @@
     },
     "permissions": "권한",
     "members": "멤버",
-    "noAgents": "에이전트가 없습니다"
+    "noAgents": "에이전트가 없습니다",
+    "presetLabel": "프리셋",
+    "presetModified": "수정됨",
+    "presetReset": "되돌리기",
+    "presets": {
+      "custom": { "label": "직접 입력" },
+      "developer": {
+        "label": "개발자",
+        "role": "개발자",
+        "expertise": "풀스택 개발, 코드 설계, 디버깅",
+        "description": "코드를 작성하고 기술적 문제를 해결합니다"
+      },
+      "frontendDeveloper": {
+        "label": "프론트엔드 개발자",
+        "role": "프론트엔드 개발자",
+        "expertise": "React, TypeScript, CSS, UI/UX",
+        "description": "UI 컴포넌트를 구현하고 사용자 경험을 개선합니다"
+      },
+      "backendDeveloper": {
+        "label": "백엔드 개발자",
+        "role": "백엔드 개발자",
+        "expertise": "API 설계, 데이터베이스, 서버 아키텍처",
+        "description": "서버 로직과 API를 구현하고 데이터를 관리합니다"
+      },
+      "codeReviewer": {
+        "label": "코드 리뷰어",
+        "role": "코드 리뷰어",
+        "expertise": "코드 품질, 보안, 성능 최적화, 베스트 프랙티스",
+        "description": "코드를 검토하고 품질과 보안을 개선합니다"
+      },
+      "projectManager": {
+        "label": "프로젝트 매니저",
+        "role": "프로젝트 매니저",
+        "expertise": "프로젝트 계획, 일정 관리, 팀 조율",
+        "description": "프로젝트를 계획하고 에이전트 간 작업을 조율합니다"
+      },
+      "devopsEngineer": {
+        "label": "DevOps 엔지니어",
+        "role": "DevOps 엔지니어",
+        "expertise": "CI/CD, Docker, 인프라 자동화, 모니터링",
+        "description": "빌드/배포 파이프라인을 구축하고 인프라를 관리합니다"
+      },
+      "qaEngineer": {
+        "label": "QA 엔지니어",
+        "role": "QA 엔지니어",
+        "expertise": "테스트 자동화, E2E 테스트, 버그 분석",
+        "description": "테스트를 작성하고 실행하여 소프트웨어 품질을 보장합니다"
+      }
+    }
   },
   "message": {
     "placeholder": "메시지를 입력하세요...",
