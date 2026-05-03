@@ -84,6 +84,11 @@
     "assignTask": "작업 지시",
     "review": "코드 리뷰"
   },
+  "home": {
+    "title": "홈",
+    "welcome": "워크스페이스를 선택하거나 새로 만드세요",
+    "noDescription": "설명 없음"
+  },
   "terminal": {
     "title": "터미널",
     "open": "터미널 열기",

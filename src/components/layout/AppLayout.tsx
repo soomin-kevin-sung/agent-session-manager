@@ -5,7 +5,7 @@ import { MemberPanel } from "@/components/agent/MemberPanel";
 import { TerminalPanel } from "@/components/terminal/TerminalPanel";
 import { AgentCreationModal } from "@/components/agent/AgentCreationModal";
 import { WorkspaceCreationModal } from "@/components/workspace/WorkspaceCreationModal";
-import { EmptyWorkspaceState } from "@/components/workspace/EmptyWorkspaceState";
+import { HomeView } from "@/components/home/HomeView";
 import { SessionCreationModal } from "@/components/session/SessionCreationModal";
 import { useUIStore } from "@/stores/ui-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -17,6 +17,7 @@ export function AppLayout() {
   const { showMemberPanel, showTerminalPanel } = useUIStore();
   const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
   const workspaces = useWorkspaceStore((s) => s.workspaces);
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const fetchAgents = useAgentStore((s) => s.fetchAgents);
 
   const hasAutoOpened = useRef(false);
@@ -35,13 +36,15 @@ export function AppLayout() {
     }
   }, [workspaces]);
 
-  const hasWorkspaces = workspaces.length > 0;
+  const isHome = activeWorkspaceId === null;
 
   return (
     <div className="dark flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
-      {hasWorkspaces ? (
+      <WorkspaceSidebar />
+      {isHome ? (
+        <HomeView />
+      ) : (
         <>
-          <WorkspaceSidebar />
           <ChannelSidebar />
           <div className="flex flex-1 flex-col min-w-0">
             <ChatArea />
@@ -49,8 +52,6 @@ export function AppLayout() {
           </div>
           {showMemberPanel && <MemberPanel />}
         </>
-      ) : (
-        <EmptyWorkspaceState />
       )}
       <AgentCreationModal />
       <WorkspaceCreationModal />

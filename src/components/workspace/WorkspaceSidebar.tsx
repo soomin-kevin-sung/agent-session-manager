@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useUIStore } from "@/stores/ui-store";
-import { Plus, Settings } from "lucide-react";
+import { Home, Plus, Settings } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -36,15 +36,39 @@ function getInitials(name: string) {
 
 export function WorkspaceSidebar() {
   const { t } = useTranslation();
-  const { workspaces, activeWorkspaceId, setActiveWorkspace } =
+  const { workspaces, activeWorkspaceId, setActiveWorkspace, goHome } =
     useWorkspaceStore();
   const setWorkspaceCreationModal = useUIStore(
     (s) => s.setWorkspaceCreationModal
   );
+  const isHome = activeWorkspaceId === null;
 
   return (
     <TooltipProvider>
       <div className="flex w-[60px] flex-col items-center gap-2 bg-zinc-950 py-3">
+        <Tooltip>
+          <TooltipTrigger
+            className="relative flex items-center justify-center"
+            onClick={goHome}
+          >
+            {isHome && (
+              <span className="absolute -left-[6px] h-8 w-1 rounded-r-full bg-zinc-100" />
+            )}
+            <div
+              className={`flex size-10 items-center justify-center transition-all ${
+                isHome
+                  ? "rounded-2xl bg-zinc-700 text-zinc-100"
+                  : "rounded-full bg-zinc-800 text-zinc-400 hover:rounded-2xl hover:text-zinc-100"
+              }`}
+            >
+              <Home className="size-5" />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="right">{t("home.title")}</TooltipContent>
+        </Tooltip>
+
+        <Separator className="mx-auto w-8 bg-zinc-800" />
+
         {workspaces.map((ws, i) => {
           const isActive = ws.id === activeWorkspaceId;
           return (

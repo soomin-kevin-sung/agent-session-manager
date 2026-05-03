@@ -84,6 +84,11 @@
     "assignTask": "Assign Task",
     "review": "Code Review"
   },
+  "home": {
+    "title": "Home",
+    "welcome": "Select a workspace or create a new one",
+    "noDescription": "No description"
+  },
   "terminal": {
     "title": "Terminal",
     "open": "Open Terminal",

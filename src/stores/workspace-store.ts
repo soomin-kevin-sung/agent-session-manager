@@ -10,6 +10,7 @@ interface WorkspaceState {
   fetchWorkspaces: () => Promise<void>;
   setActiveWorkspace: (id: string) => Promise<void>;
   setActiveChannel: (id: string) => void;
+  goHome: () => void;
   createWorkspace: (name: string, description?: string) => Promise<Workspace>;
   createChannel: (name: string, channelType: "dm" | "group") => Promise<Channel>;
 }
@@ -29,10 +30,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       set({ workspaces, activeWorkspaceId: null, activeChannelId: null, channels: [] });
     } else {
       set({ workspaces });
-      // If current active doesn't exist in list, switch to first
-      const activeExists = workspaces.some(w => w.id === currentActiveId);
-      if (!activeExists) {
-        await get().setActiveWorkspace(workspaces[0].id);
+      // If current active was set but no longer exists, switch to first
+      // If null (user is on Home), stay on Home
+      if (currentActiveId !== null) {
+        const activeExists = workspaces.some(w => w.id === currentActiveId);
+        if (!activeExists) {
+          await get().setActiveWorkspace(workspaces[0].id);
+        }
       }
     }
   },
@@ -49,6 +53,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   setActiveChannel: (id: string) => set({ activeChannelId: id }),
+
+  goHome: () => set({ activeWorkspaceId: null, activeChannelId: null, channels: [] }),
 
   createWorkspace: async (name, description) => {
     const ws = await api.workspaces.create(name, description);
