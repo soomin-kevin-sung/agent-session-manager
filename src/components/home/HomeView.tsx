@@ -26,8 +26,8 @@ export function HomeView() {
   const hasWorkspaces = workspaces.length > 0;
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-950 p-8">
-      <div className="w-full max-w-xl">
+    <div className="flex flex-1 items-center justify-center overflow-y-auto bg-zinc-950 p-8">
+      <div className="w-full max-w-xl py-8">
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-xl font-semibold text-zinc-100">
@@ -42,7 +42,7 @@ export function HomeView() {
             {workspaces.map((ws, i) => (
               <button
                 key={ws.id}
-                className="group flex w-full cursor-pointer items-center gap-4 rounded-lg border border-zinc-800/60 bg-zinc-900/50 px-4 py-3 text-left transition-all hover:border-zinc-700 hover:bg-zinc-900"
+                className="group flex w-full cursor-pointer items-center gap-4 rounded-lg border border-zinc-800/60 bg-zinc-900/50 px-4 py-3 text-left transition-all hover:border-zinc-700 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500/50"
                 onClick={() => setActiveWorkspace(ws.id)}
               >
                 <div
