@@ -68,7 +68,7 @@ export function TerminalPanel() {
                   e.stopPropagation();
                   removeTab(tab.id);
                 }}
-                className="ml-1 rounded p-0.5 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+                className="ml-1 rounded p-0.5 opacity-0 transition-opacity hover:bg-zinc-800 group-hover:opacity-100"
               >
                 <X className="size-3" />
               </span>
@@ -76,7 +76,7 @@ export function TerminalPanel() {
           ))}
           <button
             onClick={addTab}
-            className="p-1.5 text-zinc-500 hover:text-zinc-300"
+            className="rounded p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
           >
             <Plus className="size-3.5" />
           </button>
