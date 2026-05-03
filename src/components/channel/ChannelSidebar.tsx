@@ -8,9 +8,16 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronDown, Hash, Plus, User } from "lucide-react";
 import { useState } from "react";
+import { api } from "@/lib/tauri";
 
 export function ChannelSidebar() {
   const { t } = useTranslation();
@@ -23,7 +30,7 @@ export function ChannelSidebar() {
     createChannel,
   } = useWorkspaceStore();
   const { agents, activeRuns } = useAgentStore();
-  const { setAgentCreationModal } = useUIStore();
+  const { setSessionCreationModal } = useUIStore();
   const { fetchMessages } = useMessageStore();
 
   const [dmOpen, setDmOpen] = useState(true);
@@ -33,21 +40,23 @@ export function ChannelSidebar() {
   const dmChannels = channels.filter((c) => c.channel_type === "dm");
   const groupChannels = channels.filter((c) => c.channel_type === "group");
 
+  // Agents that don't already have a DM channel
+  const dmChannelNames = new Set(dmChannels.map((c) => c.name));
+  const availableAgents = agents.filter((a) => !dmChannelNames.has(a.name));
+
   const handleChannelClick = (channelId: string) => {
     setActiveChannel(channelId);
     fetchMessages(channelId);
   };
 
-  const handleCreateChannel = async (type: "dm" | "group") => {
-    if (type === "dm") {
-      setAgentCreationModal(true);
-    } else {
-      const name = prompt(t("channel.name"));
-      if (name) {
-        const ch = await createChannel(name, "group");
-        handleChannelClick(ch.id);
-      }
+  const handleAddDmAgent = async (agent: { id: string; name: string }) => {
+    const ch = await createChannel(agent.name, "dm");
+    try {
+      await api.sessions.addMember(ch.id, agent.id, "member");
+    } catch {
+      // addMember may not be available for channels; channel creation is sufficient
     }
+    handleChannelClick(ch.id);
   };
 
   return (
@@ -71,13 +80,32 @@ export function ChannelSidebar() {
                 />
                 {t("channel.dm")}
               </CollapsibleTrigger>
-              <button
-                onClick={() => handleCreateChannel("dm")}
-                className="text-zinc-400 hover:text-zinc-200"
-                aria-label={t("agent.create")}
-              >
-                <Plus className="size-4" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className="text-zinc-400 hover:text-zinc-200"
+                  aria-label={t("dm.addAgent")}
+                >
+                  <Plus className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="bottom" align="end">
+                  {availableAgents.length === 0 ? (
+                    <DropdownMenuItem disabled>
+                      <span className="text-xs text-zinc-500">
+                        {t("dm.noAgentsToAdd")}
+                      </span>
+                    </DropdownMenuItem>
+                  ) : (
+                    availableAgents.map((agent) => (
+                      <DropdownMenuItem
+                        key={agent.id}
+                        onClick={() => handleAddDmAgent(agent)}
+                      >
+                        {agent.name}
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <CollapsibleContent>
               {dmChannels.map((ch) => {
@@ -114,9 +142,9 @@ export function ChannelSidebar() {
                 {t("channel.sessions")}
               </CollapsibleTrigger>
               <button
-                onClick={() => handleCreateChannel("group")}
+                onClick={() => setSessionCreationModal(true)}
                 className="text-zinc-400 hover:text-zinc-200"
-                aria-label={t("channel.create")}
+                aria-label={t("session.create")}
               >
                 <Plus className="size-4" />
               </button>

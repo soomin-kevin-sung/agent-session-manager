@@ -5,6 +5,7 @@ import { MemberPanel } from "@/components/agent/MemberPanel";
 import { TerminalPanel } from "@/components/terminal/TerminalPanel";
 import { AgentCreationModal } from "@/components/agent/AgentCreationModal";
 import { WorkspaceCreationModal } from "@/components/workspace/WorkspaceCreationModal";
+import { SessionCreationModal } from "@/components/session/SessionCreationModal";
 import { useUIStore } from "@/stores/ui-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useAgentStore } from "@/stores/agent-store";
@@ -34,6 +35,7 @@ export function AppLayout() {
       {showMemberPanel && <MemberPanel />}
       <AgentCreationModal />
       <WorkspaceCreationModal />
+      <SessionCreationModal />
     </div>
   );
 }

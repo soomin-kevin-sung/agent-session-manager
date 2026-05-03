@@ -54,6 +54,17 @@
     "close": "Close",
     "user": "User"
   },
+  "session": {
+    "create": "Create Session",
+    "name": "Session Name",
+    "workDirectory": "Work Directory",
+    "selectAgents": "Select Agents",
+    "noAgentsAvailable": "No agents available"
+  },
+  "dm": {
+    "addAgent": "Add Agent",
+    "noAgentsToAdd": "Create an agent first"
+  },
   "terminal": {
     "title": "Terminal",
     "open": "Open Terminal",

@@ -54,6 +54,17 @@
     "close": "닫기",
     "user": "사용자"
   },
+  "session": {
+    "create": "세션 생성",
+    "name": "세션 이름",
+    "workDirectory": "작업 디렉토리",
+    "selectAgents": "에이전트 선택",
+    "noAgentsAvailable": "사용 가능한 에이전트가 없습니다"
+  },
+  "dm": {
+    "addAgent": "에이전트 추가",
+    "noAgentsToAdd": "에이전트를 먼저 생성하세요"
+  },
   "terminal": {
     "title": "터미널",
     "open": "터미널 열기",
