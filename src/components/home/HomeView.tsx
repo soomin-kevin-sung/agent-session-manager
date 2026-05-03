@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useUIStore } from "@/stores/ui-store";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { FolderPlus, ArrowRight } from "lucide-react";
 
 const CARD_COLORS = [
   "bg-indigo-600",
@@ -15,14 +15,6 @@ const CARD_COLORS = [
   "bg-pink-600",
 ];
 
-function getCardColor(index: number) {
-  return CARD_COLORS[index % CARD_COLORS.length];
-}
-
-function getInitial(name: string) {
-  return name.charAt(0).toUpperCase();
-}
-
 export function HomeView() {
   const { t } = useTranslation();
   const workspaces = useWorkspaceStore((s) => s.workspaces);
@@ -31,57 +23,69 @@ export function HomeView() {
     (s) => s.setWorkspaceCreationModal
   );
 
+  const hasWorkspaces = workspaces.length > 0;
+
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-950">
-      <div className="flex w-full max-w-2xl flex-col items-center gap-8 px-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-zinc-100">
+    <div className="flex flex-1 items-center justify-center bg-zinc-950 p-8">
+      <div className="w-full max-w-xl">
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <h1 className="text-xl font-semibold text-zinc-100">
             {t("home.title")}
           </h1>
-          <p className="mt-2 text-sm text-zinc-400">{t("home.welcome")}</p>
+          <p className="mt-1 text-sm text-zinc-500">{t("home.welcome")}</p>
         </div>
 
-        {workspaces.length > 0 && (
-          <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-3">
+        {/* Workspace list */}
+        {hasWorkspaces && (
+          <div className="mb-6 space-y-2">
             {workspaces.map((ws, i) => (
               <button
                 key={ws.id}
-                className="flex flex-col items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5 text-center transition-colors hover:border-zinc-700"
+                className="group flex w-full cursor-pointer items-center gap-4 rounded-lg border border-zinc-800/60 bg-zinc-900/50 px-4 py-3 text-left transition-all hover:border-zinc-700 hover:bg-zinc-900"
                 onClick={() => setActiveWorkspace(ws.id)}
               >
                 <div
-                  className={`flex size-12 items-center justify-center rounded-full text-lg font-bold text-white ${getCardColor(i)}`}
+                  className={`flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${CARD_COLORS[i % CARD_COLORS.length]}`}
                 >
-                  {getInitial(ws.name)}
+                  {ws.name.charAt(0).toUpperCase()}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium text-zinc-100">
                     {ws.name}
                   </div>
-                  <div className="mt-0.5 truncate text-xs text-zinc-400">
-                    {ws.description || t("home.noDescription")}
-                  </div>
+                  {ws.description && (
+                    <div className="truncate text-xs text-zinc-500">
+                      {ws.description}
+                    </div>
+                  )}
                 </div>
+                <ArrowRight className="size-4 text-zinc-600 transition-colors group-hover:text-zinc-400" />
               </button>
             ))}
           </div>
         )}
 
-        {workspaces.length === 0 && (
-          <div className="flex flex-col items-center gap-2 text-center">
-            <p className="text-sm text-zinc-400">
+        {/* Empty state */}
+        {!hasWorkspaces && (
+          <div className="mb-6 rounded-lg border border-dashed border-zinc-800 px-6 py-10 text-center">
+            <FolderPlus className="mx-auto mb-3 size-10 text-zinc-700" />
+            <p className="text-sm text-zinc-500">
               {t("workspace.emptyStateDescription")}
             </p>
           </div>
         )}
 
-        <Button
-          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          onClick={() => setWorkspaceCreationModal(true)}
-        >
-          <Plus className="mr-2 size-4" />
-          {t("workspace.create")}
-        </Button>
+        {/* CTA */}
+        <div className="text-center">
+          <Button
+            onClick={() => setWorkspaceCreationModal(true)}
+            className="gap-2"
+          >
+            <FolderPlus className="size-4" />
+            {hasWorkspaces ? t("workspace.create") : t("workspace.firstCreate")}
+          </Button>
+        </div>
       </div>
     </div>
   );
