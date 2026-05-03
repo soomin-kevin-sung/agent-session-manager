@@ -38,7 +38,8 @@ export function AppLayout() {
   useEffect(() => {
     void fetchWorkspaces();
     void fetchAgents();
-  }, [fetchWorkspaces, fetchAgents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const syncOnboardingState = () => {
