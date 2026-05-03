@@ -130,7 +130,7 @@ export function OnboardingPage() {
       }));
 
       ctx.save();
-      ctx.globalAlpha = 0.18;
+      ctx.globalAlpha = 0.3;
 
       for (const edge of EDGES) {
         const fromNode = positions[edge.from];
@@ -185,11 +185,11 @@ export function OnboardingPage() {
           if (arrival > 0) {
             ctx.strokeStyle = dot.color;
             ctx.lineWidth = 2;
-            ctx.globalAlpha = 0.18 * (1 - arrival);
+            ctx.globalAlpha = 0.3 * (1 - arrival);
             ctx.beginPath();
             ctx.arc(dot.targetNode.px, dot.targetNode.py, dot.targetNode.radius + arrival * 18, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.globalAlpha = 0.18;
+            ctx.globalAlpha = 0.3;
           }
         }
 
