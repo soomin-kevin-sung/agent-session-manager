@@ -196,6 +196,13 @@ export function OnboardingPage() {
         ctx.shadowBlur = 0;
       }
 
+      // End edge/signal scope (globalAlpha 0.18)
+      ctx.restore();
+
+      // Node scope — fully opaque
+      ctx.save();
+      ctx.globalAlpha = 1;
+
       for (const node of positions) {
         const gradient = ctx.createRadialGradient(
           node.px - node.radius * 0.35,
