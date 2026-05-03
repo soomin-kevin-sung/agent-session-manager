@@ -149,11 +149,13 @@ export function OnboardingPage() {
       ctx.globalAlpha = 0.18;
 
       for (const edge of EDGES) {
-        const from = positions[edge.from];
-        const to = positions[edge.to];
+        const fromNode = positions[edge.from];
+        const toNode = positions[edge.to];
+        const from = { x: fromNode.px, y: fromNode.py };
+        const to = { x: toNode.px, y: toNode.py };
         const control = {
-          x: (from.px + to.px) / 2 + edge.offset,
-          y: (from.py + to.py) / 2 - Math.abs(edge.offset) * 0.2,
+          x: (from.x + to.x) / 2 + edge.offset,
+          y: (from.y + to.y) / 2 - Math.abs(edge.offset) * 0.2,
         };
         const progress = (seconds * 0.22 + edge.from * 0.11) % 1;
         const reportProgress = (seconds * 0.17 + edge.to * 0.13 + 0.45) % 1;
@@ -161,16 +163,16 @@ export function OnboardingPage() {
         ctx.strokeStyle = "rgba(148, 163, 184, 0.34)";
         ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.moveTo(from.px, from.py);
-        ctx.quadraticCurveTo(control.x, control.y, to.px, to.py);
+        ctx.moveTo(from.x, from.y);
+        ctx.quadraticCurveTo(control.x, control.y, to.x, to.y);
         ctx.stroke();
 
-        ctx.strokeStyle = `${to.color}88`;
-        ctx.shadowColor = to.color;
+        ctx.strokeStyle = `${toNode.color}88`;
+        ctx.shadowColor = toNode.color;
         ctx.shadowBlur = 12;
         ctx.lineWidth = 1.8;
         ctx.beginPath();
-        ctx.moveTo(from.px, from.py);
+        ctx.moveTo(from.x, from.y);
         for (let i = 0; i <= 18; i += 1) {
           const trailT = Math.max(0, progress - i * 0.011);
           const point = pointOnCurve(from, control, to, trailT);
@@ -179,24 +181,26 @@ export function OnboardingPage() {
         }
         ctx.stroke();
 
-        for (const [t, color, target] of [
-          [progress, to.color, to] as const,
-          [1 - reportProgress, from.color, from] as const,
-        ]) {
-          const point = pointOnCurve(from, control, to, t);
-          const arrival = t > 0.93 ? (t - 0.93) / 0.07 : 0;
-          ctx.fillStyle = color;
-          ctx.shadowColor = color;
+        // Command dot (from → to) and report dot (to → from)
+        const dots: Array<{ t: number; color: string; targetNode: typeof fromNode }> = [
+          { t: progress, color: toNode.color, targetNode: toNode },
+          { t: 1 - reportProgress, color: fromNode.color, targetNode: fromNode },
+        ];
+        for (const dot of dots) {
+          const point = pointOnCurve(from, control, to, dot.t);
+          const arrival = dot.t > 0.93 ? (dot.t - 0.93) / 0.07 : 0;
+          ctx.fillStyle = dot.color;
+          ctx.shadowColor = dot.color;
           ctx.shadowBlur = 20;
           ctx.beginPath();
           ctx.arc(point.x, point.y, 4.4, 0, Math.PI * 2);
           ctx.fill();
           if (arrival > 0) {
-            ctx.strokeStyle = color;
+            ctx.strokeStyle = dot.color;
             ctx.lineWidth = 2;
             ctx.globalAlpha = 0.18 * (1 - arrival);
             ctx.beginPath();
-            ctx.arc(target.px, target.py, target.radius + arrival * 18, 0, Math.PI * 2);
+            ctx.arc(dot.targetNode.px, dot.targetNode.py, dot.targetNode.radius + arrival * 18, 0, Math.PI * 2);
             ctx.stroke();
             ctx.globalAlpha = 0.18;
           }
