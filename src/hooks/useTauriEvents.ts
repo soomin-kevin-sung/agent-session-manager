@@ -7,6 +7,7 @@ import {
 } from "@/lib/tauri";
 import { useAgentStore } from "@/stores/agent-store";
 import { useMessageStore } from "@/stores/message-store";
+import { useTerminalStore, type TerminalLine } from "@/stores/terminal-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { findDmChannelByAgentId } from "@/lib/channel-utils";
 
@@ -46,6 +47,94 @@ function createLocalAgentMessage(
   };
 }
 
+function createTerminalLine(
+  payload: AgentOutputPayload,
+  type: TerminalLine["type"],
+  content: string
+): TerminalLine | null {
+  if (!content.trim()) {
+    return null;
+  }
+
+  return {
+    id: `terminal-${payload.run_id}-${crypto.randomUUID()}`,
+    runId: payload.run_id,
+    agentId: payload.agent_id,
+    timestamp: new Date().toISOString(),
+    type,
+    content,
+  };
+}
+
+function addTerminalLineFromEvent(payload: AgentOutputPayload) {
+  const { event } = payload;
+  let line: TerminalLine | null = null;
+
+  switch (event.event_type) {
+    case "RawLog":
+      line = createTerminalLine(
+        payload,
+        event.stream === "stderr" ? "stderr" : "stdout",
+        event.line
+      );
+      break;
+    case "CommandStarted":
+      line = createTerminalLine(payload, "command", event.command);
+      break;
+    case "CommandOutput":
+      line = createTerminalLine(payload, "stdout", event.output);
+      break;
+    case "CommandCompleted":
+      line = createTerminalLine(
+        payload,
+        "system",
+        `Exit code: ${event.exit_code ?? "unknown"}`
+      );
+      break;
+    case "Error":
+      line = createTerminalLine(payload, "error", event.message);
+      break;
+    case "Message":
+      line = createTerminalLine(payload, "stdout", event.content);
+      break;
+    case "TurnStarted":
+      line = createTerminalLine(payload, "system", "Turn started");
+      break;
+    case "TurnCompleted":
+      line = createTerminalLine(payload, "system", "Turn completed");
+      break;
+    case "TurnFailed":
+      line = createTerminalLine(payload, "error", event.message);
+      break;
+    case "SessionStarted":
+      line = createTerminalLine(payload, "system", `Session started: ${event.session_id}`);
+      break;
+    case "ToolCall":
+      line = createTerminalLine(payload, "system", `Tool call: ${event.tool}`);
+      break;
+    case "ToolResult":
+      line = createTerminalLine(payload, "system", `Tool result: ${event.tool} (${event.status})`);
+      break;
+    case "Usage":
+      line = createTerminalLine(payload, "system", "Usage updated");
+      break;
+    case "Cost":
+      line = createTerminalLine(payload, "system", `Cost: $${event.usd}`);
+      break;
+    case "ProcessExited":
+      line = createTerminalLine(
+        payload,
+        "system",
+        `Process exited: ${event.exit_code ?? "unknown"}`
+      );
+      break;
+  }
+
+  if (line) {
+    useTerminalStore.getState().addLine(line);
+  }
+}
+
 export function useTauriEvents() {
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +144,8 @@ export function useTauriEvents() {
       try {
         const unlisten1 = await events.onAgentOutput(
           (payload: AgentOutputPayload) => {
+            addTerminalLineFromEvent(payload);
+
             const channelId = getChannelIdForRun(payload);
             if (!channelId) return;
 
@@ -71,6 +162,7 @@ export function useTauriEvents() {
         const unlisten2 = await events.onRunStarted(
           (payload: RunLifecyclePayload) => {
             const store = useAgentStore.getState();
+            useTerminalStore.getState().setRunActive(payload.run_id);
             store.setRunActive(payload.agent_id, payload.run_id);
             if (payload.channel_id) {
               store.setRunChannel(payload.run_id, payload.channel_id);
@@ -83,6 +175,7 @@ export function useTauriEvents() {
         const unlisten3 = await events.onRunCompleted(
           (payload: RunLifecyclePayload) => {
             const store = useAgentStore.getState();
+            useTerminalStore.getState().setRunInactive(payload.run_id);
             const channelId =
               payload.channel_id ?? store.activeRunChannels.get(payload.run_id);
             if (store.activeRuns.get(payload.agent_id) === payload.run_id) {
@@ -100,6 +193,7 @@ export function useTauriEvents() {
         const unlisten4 = await events.onRunFailed(
           (payload: RunLifecyclePayload) => {
             const store = useAgentStore.getState();
+            useTerminalStore.getState().setRunInactive(payload.run_id);
             const channelId =
               payload.channel_id ?? store.activeRunChannels.get(payload.run_id);
             if (store.activeRuns.get(payload.agent_id) === payload.run_id) {
@@ -125,6 +219,7 @@ export function useTauriEvents() {
         const unlisten5 = await events.onRunCancelled(
           (payload: RunLifecyclePayload) => {
             const store = useAgentStore.getState();
+            useTerminalStore.getState().setRunInactive(payload.run_id);
             const channelId =
               payload.channel_id ?? store.activeRunChannels.get(payload.run_id);
             if (store.activeRuns.get(payload.agent_id) === payload.run_id) {

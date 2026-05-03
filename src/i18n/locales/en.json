@@ -155,6 +155,7 @@
     "title": "Terminal",
     "open": "Open Terminal",
     "close": "Close Terminal",
+    "clear": "Clear",
     "noOutput": "No terminal output.",
     "session": "Session"
   }
