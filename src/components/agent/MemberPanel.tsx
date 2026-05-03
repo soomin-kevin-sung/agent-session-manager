@@ -1,3 +1,4 @@
+import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useAgentStore } from "@/stores/agent-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -5,7 +6,7 @@ import { useMessageStore } from "@/stores/message-store";
 import { useUIStore } from "@/stores/ui-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Plus } from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
 
 const AGENT_COLORS = [
   "bg-indigo-600",
@@ -23,30 +24,70 @@ function getAgentColor(index: number) {
 export function MemberPanel() {
   const { t } = useTranslation();
   const { agents, activeRuns } = useAgentStore();
-  const { channels, setActiveChannel, createChannel } = useWorkspaceStore();
+  const { channels, activeWorkspaceId, setActiveChannel, createChannel } =
+    useWorkspaceStore();
   const { fetchMessages } = useMessageStore();
   const { setAgentCreationModal } = useUIStore();
+
+  // Pending guard to prevent duplicate DM creation
+  const pendingDm = useRef<Set<string>>(new Set());
 
   const onlineAgents = agents.filter((a) => activeRuns.has(a.id));
   const offlineAgents = agents.filter((a) => !activeRuns.has(a.id));
 
-  const handleAgentDoubleClick = async (agent: { id: string; name: string }) => {
-    // Check if DM channel already exists
-    const existing = channels.find(
-      (ch) => ch.channel_type === "dm" && ch.name === agent.name
-    );
+  // Find existing DM channel for an agent by checking channel name pattern "dm:<agentId>"
+  // We use the convention: DM channel name = agent name, and channel_type = "dm"
+  // To disambiguate same-name agents, we store agent.id in the DM channel name as "agent.name"
+  // and match by iterating channel_members. But since we don't have channel_members in frontend,
+  // we use a unique DM channel name convention: "<agentName> (#<agentId short>)"
+  // Simpler approach: just use agent.id as part of channel name for uniqueness.
 
-    if (existing) {
-      // Open existing DM
-      setActiveChannel(existing.id);
-      fetchMessages(existing.id);
-    } else {
-      // Create new DM channel and open it
-      const ch = await createChannel(agent.name, "dm");
-      setActiveChannel(ch.id);
-      fetchMessages(ch.id);
-    }
-  };
+  const findDmChannel = useCallback(
+    (agentId: string) => {
+      return channels.find(
+        (ch) => ch.channel_type === "dm" && ch.name.endsWith(`[${agentId}]`)
+      );
+    },
+    [channels]
+  );
+
+  const openOrCreateDm = useCallback(
+    async (agent: { id: string; name: string }) => {
+      // Prevent duplicate creation
+      if (pendingDm.current.has(agent.id)) return;
+
+      const existing = findDmChannel(agent.id);
+      if (existing) {
+        setActiveChannel(existing.id);
+        fetchMessages(existing.id);
+        return;
+      }
+
+      pendingDm.current.add(agent.id);
+      try {
+        // Channel name includes agent id for uniqueness: "AgentName [agent-id]"
+        const dmName = `${agent.name} [${agent.id}]`;
+        const ch = await createChannel(dmName, "dm");
+
+        // Guard: check workspace hasn't changed during await
+        if (useWorkspaceStore.getState().activeWorkspaceId !== activeWorkspaceId) {
+          return;
+        }
+
+        setActiveChannel(ch.id);
+        fetchMessages(ch.id);
+      } finally {
+        pendingDm.current.delete(agent.id);
+      }
+    },
+    [
+      activeWorkspaceId,
+      findDmChannel,
+      setActiveChannel,
+      fetchMessages,
+      createChannel,
+    ]
+  );
 
   return (
     <div className="flex w-60 flex-col border-l border-zinc-800 bg-zinc-900">
@@ -77,7 +118,7 @@ export function MemberPanel() {
               runtime={agent.runtime_type}
               color={getAgentColor(i)}
               online
-              onDoubleClick={() => handleAgentDoubleClick(agent)}
+              onOpenDm={() => openOrCreateDm(agent)}
             />
           ))}
 
@@ -97,7 +138,7 @@ export function MemberPanel() {
               runtime={agent.runtime_type}
               color={getAgentColor(onlineAgents.length + i)}
               online={false}
-              onDoubleClick={() => handleAgentDoubleClick(agent)}
+              onOpenDm={() => openOrCreateDm(agent)}
             />
           ))}
 
@@ -118,24 +159,20 @@ function AgentCard({
   runtime,
   color,
   online,
-  onDoubleClick,
+  onOpenDm,
 }: {
   name: string;
   model: string | null;
   runtime: string;
   color: string;
   online: boolean;
-  onDoubleClick: () => void;
+  onOpenDm: () => void;
 }) {
   const { t } = useTranslation();
   const initial = name[0]?.toUpperCase() ?? "?";
 
   return (
-    <div
-      className="mb-1 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-zinc-800/50"
-      onDoubleClick={onDoubleClick}
-      title={t("dm.doubleClickToOpen")}
-    >
+    <div className="group mb-1 flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-zinc-800/50">
       <div className="relative">
         <div
           className={`flex size-8 items-center justify-center rounded-full text-sm font-semibold text-white ${color} ${!online ? "opacity-50" : ""}`}
@@ -158,6 +195,15 @@ function AgentCard({
           {runtime} {model ? `· ${model}` : ""}
         </p>
       </div>
+      {/* Explicit DM button — visible on hover, keyboard accessible */}
+      <button
+        onClick={onOpenDm}
+        className="shrink-0 rounded p-1 text-zinc-500 opacity-0 transition-opacity hover:bg-zinc-700 hover:text-zinc-200 focus:opacity-100 group-hover:opacity-100"
+        aria-label={t("dm.openDm", { name })}
+        title={t("dm.openDm", { name })}
+      >
+        <MessageSquare className="size-4" />
+      </button>
     </div>
   );
 }

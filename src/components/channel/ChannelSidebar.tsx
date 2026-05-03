@@ -78,7 +78,10 @@ export function ChannelSidebar() {
                       agents={agents}
                       activeRuns={activeRuns}
                     />
-                    <span className="truncate">{ch.name}</span>
+                    <span className="truncate">
+                      {/* Strip agent id suffix from DM channel name for display */}
+                      {ch.name.replace(/\s*\[.*\]$/, "")}
+                    </span>
                   </button>
                 );
               })}

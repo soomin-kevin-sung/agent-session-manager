@@ -64,7 +64,8 @@
   "dm": {
     "addAgent": "Add Agent",
     "noAgentsToAdd": "Create an agent first",
-    "doubleClickToOpen": "Double-click to open DM"
+    "doubleClickToOpen": "Double-click to open DM",
+    "openDm": "Message {{name}}"
   },
   "terminal": {
     "title": "Terminal",

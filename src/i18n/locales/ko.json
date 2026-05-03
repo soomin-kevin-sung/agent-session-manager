@@ -64,7 +64,8 @@
   "dm": {
     "addAgent": "에이전트 추가",
     "noAgentsToAdd": "에이전트를 먼저 생성하세요",
-    "doubleClickToOpen": "더블클릭하여 DM 열기"
+    "doubleClickToOpen": "더블클릭하여 DM 열기",
+    "openDm": "{{name}}에게 메시지 보내기"
   },
   "terminal": {
     "title": "터미널",
