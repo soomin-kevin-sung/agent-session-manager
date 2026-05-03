@@ -55,11 +55,11 @@ export function AppLayout() {
 
   // Show nothing until workspaces are loaded to prevent onboarding flash
   if (!workspacesLoaded) {
-    return <div className="dark h-screen w-screen bg-zinc-950" />;
+    return <div className="dark h-screen min-h-[600px] w-screen min-w-[960px] bg-zinc-950" />;
   }
 
   return (
-    <div className="dark flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
+    <div className="dark flex h-screen min-h-[600px] w-screen min-w-[960px] overflow-hidden bg-zinc-950 text-zinc-100">
       {shouldShowOnboarding ? (
         <OnboardingPage />
       ) : (
