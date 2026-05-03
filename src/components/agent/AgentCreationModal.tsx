@@ -15,18 +15,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import type { CreateAgentInput } from "@/lib/tauri";
 
-const CLAUDE_MODELS = [
-  { value: "claude-opus-4-6", label: "Claude Opus 4.6" },
-  { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
-  { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
+interface ModelOption {
+  value: string;
+  label: string;
+  runtime: "claude_cli" | "codex_cli";
+  provider: "anthropic" | "openai";
+  group: string;
+}
+
+const ALL_MODELS: ModelOption[] = [
+  { value: "claude-opus-4-6", label: "Claude Opus 4.6", runtime: "claude_cli", provider: "anthropic", group: "Claude" },
+  { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", runtime: "claude_cli", provider: "anthropic", group: "Claude" },
+  { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5", runtime: "claude_cli", provider: "anthropic", group: "Claude" },
+  { value: "gpt-5.5", label: "Codex GPT-5.5", runtime: "codex_cli", provider: "openai", group: "Codex" },
+  { value: "o3", label: "Codex o3", runtime: "codex_cli", provider: "openai", group: "Codex" },
+  { value: "o4-mini", label: "Codex o4-mini", runtime: "codex_cli", provider: "openai", group: "Codex" },
+  { value: "gpt-4.1", label: "Codex GPT-4.1", runtime: "codex_cli", provider: "openai", group: "Codex" },
 ];
 
-const CODEX_MODELS = [
-  { value: "gpt-5.5", label: "GPT-5.5" },
-  { value: "o3", label: "o3" },
-  { value: "o4-mini", label: "o4-mini" },
-  { value: "gpt-4.1", label: "GPT-4.1" },
-];
+const GROUPS = [...new Set(ALL_MODELS.map((m) => m.group))];
 
 const ROLE_PRESETS = [
   "developer",
@@ -53,24 +60,14 @@ export function AgentCreationModal() {
   const createAgent = useAgentStore((s) => s.createAgent);
 
   const [name, setName] = useState("");
-  const [runtimeType, setRuntimeType] = useState<"claude_cli" | "codex_cli">(
-    "claude_cli"
-  );
-  const [modelName, setModelName] = useState(CLAUDE_MODELS[0].value);
+  const [selectedModel, setSelectedModel] = useState(ALL_MODELS[0].value);
   const [role, setRole] = useState("");
   const [expertise, setExpertise] = useState("");
   const [description, setDescription] = useState("");
   const [permissions, setPermissions] = useState<string[]>(["execute_cli"]);
   const [submitting, setSubmitting] = useState(false);
 
-  const models = runtimeType === "claude_cli" ? CLAUDE_MODELS : CODEX_MODELS;
-
-  const handleProviderChange = (provider: "claude_cli" | "codex_cli") => {
-    setRuntimeType(provider);
-    const defaultModel =
-      provider === "claude_cli" ? CLAUDE_MODELS[0].value : CODEX_MODELS[0].value;
-    setModelName(defaultModel);
-  };
+  const model = ALL_MODELS.find((m) => m.value === selectedModel) ?? ALL_MODELS[0];
 
   const togglePermission = (perm: string) => {
     setPermissions((prev) =>
@@ -96,9 +93,9 @@ export function AgentCreationModal() {
     try {
       const input: CreateAgentInput = {
         name: name.trim(),
-        runtime_type: runtimeType,
-        provider: runtimeType === "claude_cli" ? "anthropic" : "openai",
-        model_name: modelName || undefined,
+        runtime_type: model.runtime,
+        provider: model.provider,
+        model_name: model.value,
         persona: buildPersonaJson(),
         permissions,
       };
@@ -112,8 +109,7 @@ export function AgentCreationModal() {
 
   const resetForm = () => {
     setName("");
-    setRuntimeType("claude_cli");
-    setModelName(CLAUDE_MODELS[0].value);
+    setSelectedModel(ALL_MODELS[0].value);
     setRole("");
     setExpertise("");
     setDescription("");
@@ -148,38 +144,7 @@ export function AgentCreationModal() {
             />
           </div>
 
-          {/* AI Provider */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-zinc-400">
-              {t("agent.provider")}
-            </label>
-            <div
-              className="flex gap-2"
-              role="radiogroup"
-              aria-label={t("agent.provider")}
-            >
-              <Button
-                variant={runtimeType === "claude_cli" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleProviderChange("claude_cli")}
-                role="radio"
-                aria-checked={runtimeType === "claude_cli"}
-              >
-                Claude
-              </Button>
-              <Button
-                variant={runtimeType === "codex_cli" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleProviderChange("codex_cli")}
-                role="radio"
-                aria-checked={runtimeType === "codex_cli"}
-              >
-                Codex
-              </Button>
-            </div>
-          </div>
-
-          {/* Model — dropdown */}
+          {/* Model — single grouped dropdown */}
           <div>
             <label
               htmlFor="agent-model"
@@ -189,14 +154,18 @@ export function AgentCreationModal() {
             </label>
             <select
               id="agent-model"
-              value={modelName}
-              onChange={(e) => setModelName(e.target.value)}
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
               className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus-visible:border-zinc-600 focus-visible:ring-1 focus-visible:ring-sky-500/40"
             >
-              {models.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
+              {GROUPS.map((group) => (
+                <optgroup key={group} label={group}>
+                  {ALL_MODELS.filter((m) => m.group === group).map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
@@ -207,7 +176,7 @@ export function AgentCreationModal() {
               {t("agent.persona")}
             </legend>
 
-            {/* Role — combobox with presets */}
+            {/* Role */}
             <div>
               <label
                 htmlFor="agent-role"
@@ -215,21 +184,18 @@ export function AgentCreationModal() {
               >
                 {t("agent.role")}
               </label>
-              <div className="flex gap-2">
-                <Input
-                  id="agent-role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  placeholder={t("agent.rolePlaceholder")}
-                  list="role-presets"
-                  className="flex-1"
-                />
-                <datalist id="role-presets">
-                  {ROLE_PRESETS.map((r) => (
-                    <option key={r} value={r} />
-                  ))}
-                </datalist>
-              </div>
+              <Input
+                id="agent-role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                placeholder={t("agent.rolePlaceholder")}
+                list="role-presets"
+              />
+              <datalist id="role-presets">
+                {ROLE_PRESETS.map((r) => (
+                  <option key={r} value={r} />
+                ))}
+              </datalist>
             </div>
 
             {/* Expertise */}

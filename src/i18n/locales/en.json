@@ -21,7 +21,6 @@
     "createDescription": "Create a new AI agent.",
     "name": "Name",
     "namePlaceholder": "e.g. Frontend Developer",
-    "provider": "AI Provider",
     "model": "Model",
     "persona": "Persona",
     "role": "Role",

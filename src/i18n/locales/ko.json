@@ -21,7 +21,6 @@
     "createDescription": "새로운 AI 에이전트를 생성합니다.",
     "name": "이름",
     "namePlaceholder": "예: 프론트엔드 개발자",
-    "provider": "AI 제공자",
     "model": "모델",
     "persona": "페르소나",
     "role": "역할",
