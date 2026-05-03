@@ -11,7 +11,7 @@ import { useUIStore } from "@/stores/ui-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useAgentStore } from "@/stores/agent-store";
 import { useTauriEvents } from "@/hooks/useTauriEvents";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function AppLayout() {
   const { showMemberPanel, showTerminalPanel } = useUIStore();
@@ -19,12 +19,21 @@ export function AppLayout() {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const fetchAgents = useAgentStore((s) => s.fetchAgents);
 
+  const hasAutoOpened = useRef(false);
+
   useTauriEvents();
 
   useEffect(() => {
     fetchWorkspaces();
     fetchAgents();
   }, [fetchWorkspaces, fetchAgents]);
+
+  useEffect(() => {
+    if (workspaces.length === 0 && !hasAutoOpened.current) {
+      hasAutoOpened.current = true;
+      useUIStore.getState().setWorkspaceCreationModal(true);
+    }
+  }, [workspaces]);
 
   const hasWorkspaces = workspaces.length > 0;
 

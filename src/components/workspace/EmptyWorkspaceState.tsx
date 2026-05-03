@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/stores/ui-store";
+import { FolderPlus } from "lucide-react";
 
 export function EmptyWorkspaceState() {
   const { t } = useTranslation();
@@ -9,7 +10,7 @@ export function EmptyWorkspaceState() {
   return (
     <div className="flex flex-1 items-center justify-center bg-zinc-950">
       <div className="flex flex-col items-center gap-4 text-center">
-        <span className="text-5xl">🤖</span>
+        <FolderPlus className="size-16 text-zinc-600" />
         <h2 className="text-xl font-semibold text-zinc-100">
           {t("workspace.emptyState")}
         </h2>

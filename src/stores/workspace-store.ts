@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { api, type Workspace, type Channel } from "@/lib/tauri";
-import { useUIStore } from "@/stores/ui-store";
 
 interface WorkspaceState {
   workspaces: Workspace[];
@@ -23,12 +22,18 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   fetchWorkspaces: async () => {
     const workspaces = await api.workspaces.list();
-    set({ workspaces });
-    if (workspaces.length > 0 && !get().activeWorkspaceId) {
-      await get().setActiveWorkspace(workspaces[0].id);
-    }
+    const currentActiveId = get().activeWorkspaceId;
+
     if (workspaces.length === 0) {
-      useUIStore.getState().setWorkspaceCreationModal(true);
+      // Reset all state when no workspaces
+      set({ workspaces, activeWorkspaceId: null, activeChannelId: null, channels: [] });
+    } else {
+      set({ workspaces });
+      // If current active doesn't exist in list, switch to first
+      const activeExists = workspaces.some(w => w.id === currentActiveId);
+      if (!activeExists) {
+        await get().setActiveWorkspace(workspaces[0].id);
+      }
     }
   },
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,6 +51,9 @@ export function WorkspaceCreationModal() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isFirstWorkspace ? t("workspace.firstCreate") : t("workspace.create")}</DialogTitle>
+          {isFirstWorkspace && (
+            <DialogDescription>{t("workspace.firstCreateDescription")}</DialogDescription>
+          )}
         </DialogHeader>
         <div className="space-y-4">
           <div>
