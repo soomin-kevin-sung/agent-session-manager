@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useMessageStore } from "@/stores/message-store";
+import { EMPTY_MESSAGES, useMessageStore } from "@/stores/message-store";
 import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageItem } from "@/components/chat/MessageItem";
@@ -10,7 +10,9 @@ interface MessageListProps {
 
 export function MessageList({ channelId }: MessageListProps) {
   const { t } = useTranslation();
-  const messages = useMessageStore((s) => s.getMessages(channelId));
+  const messages = useMessageStore(
+    (s) => s.messagesByChannel[channelId] ?? EMPTY_MESSAGES
+  );
   const loading = useMessageStore((s) => s.loadingChannels.has(channelId));
   const fetchMessages = useMessageStore((s) => s.fetchMessages);
   const bottomRef = useRef<HTMLDivElement>(null);

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { api, type Message } from "@/lib/tauri";
 
+export const EMPTY_MESSAGES: Message[] = [];
+
 interface MessageState {
   messagesByChannel: Record<string, Message[]>;
   loadingChannels: Set<string>;
@@ -67,7 +69,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     }
   },
 
-  getMessages: (channelId) => get().messagesByChannel[channelId] ?? [],
+  getMessages: (channelId) => get().messagesByChannel[channelId] ?? EMPTY_MESSAGES,
 
   clearMessages: (channelId) => {
     set((state) => {
