@@ -35,6 +35,8 @@ export function WorkspaceCreationModal() {
     setSubmitting(true);
     try {
       await createWorkspace(name.trim(), description.trim() || undefined);
+      localStorage.setItem("onboarding_completed", "true");
+      window.dispatchEvent(new Event("onboarding-completed"));
       if (useUIStore.getState().showWorkspaceCreationModal) {
         resetForm();
         setShow(false);

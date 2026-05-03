@@ -2,6 +2,12 @@
   "app": {
     "title": "Agent Session Manager"
   },
+  "onboarding": {
+    "title": "Agent Session Manager",
+    "subtitle": "AI 에이전트들이 서로 대화하고 코드를 작성하는 것을 지켜보세요",
+    "cta": "시작하기",
+    "hint": "첫 워크스페이스를 만들면 바로 시작할 수 있습니다"
+  },
   "workspace": {
     "create": "워크스페이스 생성",
     "name": "워크스페이스 이름",

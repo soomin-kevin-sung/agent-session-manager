@@ -6,12 +6,19 @@ import { TerminalPanel } from "@/components/terminal/TerminalPanel";
 import { AgentCreationModal } from "@/components/agent/AgentCreationModal";
 import { WorkspaceCreationModal } from "@/components/workspace/WorkspaceCreationModal";
 import { HomeView } from "@/components/home/HomeView";
+import { OnboardingPage } from "@/components/onboarding/OnboardingPage";
 import { SessionCreationModal } from "@/components/session/SessionCreationModal";
 import { useUIStore } from "@/stores/ui-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useAgentStore } from "@/stores/agent-store";
 import { useTauriEvents } from "@/hooks/useTauriEvents";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+
+const ONBOARDING_COMPLETED_KEY = "onboarding_completed";
+
+function readOnboardingCompleted() {
+  return localStorage.getItem(ONBOARDING_COMPLETED_KEY) === "true";
+}
 
 export function AppLayout() {
   const { showMemberPanel, showTerminalPanel } = useUIStore();
@@ -19,8 +26,7 @@ export function AppLayout() {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const fetchAgents = useAgentStore((s) => s.fetchAgents);
-
-  const hasAutoOpened = useRef(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(readOnboardingCompleted);
 
   useTauriEvents();
 
@@ -30,13 +36,30 @@ export function AppLayout() {
   }, [fetchWorkspaces, fetchAgents]);
 
   useEffect(() => {
-    if (workspaces.length === 0 && !hasAutoOpened.current) {
-      hasAutoOpened.current = true;
-      useUIStore.getState().setWorkspaceCreationModal(true);
-    }
-  }, [workspaces]);
+    const syncOnboardingState = () => {
+      setOnboardingCompleted(readOnboardingCompleted());
+    };
+
+    window.addEventListener("storage", syncOnboardingState);
+    window.addEventListener("onboarding-completed", syncOnboardingState);
+
+    return () => {
+      window.removeEventListener("storage", syncOnboardingState);
+      window.removeEventListener("onboarding-completed", syncOnboardingState);
+    };
+  }, []);
 
   const isHome = activeWorkspaceId === null;
+  const shouldShowOnboarding = !onboardingCompleted && workspaces.length === 0;
+
+  if (shouldShowOnboarding) {
+    return (
+      <div className="dark h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
+        <OnboardingPage />
+        <WorkspaceCreationModal />
+      </div>
+    );
+  }
 
   return (
     <div className="dark flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">

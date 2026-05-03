@@ -2,6 +2,12 @@
   "app": {
     "title": "Agent Session Manager"
   },
+  "onboarding": {
+    "title": "Agent Session Manager",
+    "subtitle": "Watch AI agents collaborate and write code together",
+    "cta": "Get Started",
+    "hint": "Create your first workspace to begin"
+  },
   "workspace": {
     "create": "Create Workspace",
     "name": "Workspace Name",
