@@ -1,5 +1,8 @@
 import { useEffect, useRef } from "react";
 import { EMPTY_MESSAGES, useMessageStore } from "@/stores/message-store";
+import { useAgentStore } from "@/stores/agent-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
+import { parseAgentIdFromDmChannelName } from "@/lib/channel-utils";
 import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageItem } from "@/components/chat/MessageItem";
@@ -15,7 +18,16 @@ export function MessageList({ channelId }: MessageListProps) {
   );
   const loading = useMessageStore((s) => s.loadingChannels.has(channelId));
   const fetchMessages = useMessageStore((s) => s.fetchMessages);
+  const activeRuns = useAgentStore((s) => s.activeRuns);
+  const channel = useWorkspaceStore((s) =>
+    s.channels.find((candidate) => candidate.id === channelId)
+  );
   const bottomRef = useRef<HTMLDivElement>(null);
+  const agentId =
+    channel?.channel_type === "dm"
+      ? parseAgentIdFromDmChannelName(channel.name)
+      : null;
+  const agentThinking = agentId ? activeRuns.has(agentId) : false;
 
   useEffect(() => {
     fetchMessages(channelId);
@@ -23,7 +35,7 @@ export function MessageList({ channelId }: MessageListProps) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, agentThinking]);
 
   if (loading) {
     return (
@@ -44,6 +56,16 @@ export function MessageList({ channelId }: MessageListProps) {
         {messages.map((msg) => (
           <MessageItem key={msg.id} message={msg} />
         ))}
+        {agentThinking && (
+          <div className="flex gap-3 rounded-md px-2 py-2">
+            <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-700">
+              <span className="size-2 animate-pulse rounded-full bg-emerald-400" />
+            </div>
+            <div className="flex items-center">
+              <p className="text-sm text-zinc-400">{t("message.thinking")}</p>
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
     </ScrollArea>

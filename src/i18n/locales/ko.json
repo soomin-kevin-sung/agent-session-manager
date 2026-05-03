@@ -109,7 +109,9 @@
     "send": "전송",
     "noMessages": "메시지가 없습니다. 대화를 시작하세요!",
     "today": "오늘",
-    "system": "시스템"
+    "system": "시스템",
+    "thinking": "에이전트가 생각하는 중...",
+    "agentRunFailed": "에이전트 실행 실패: {{message}}"
   },
   "common": {
     "cancel": "취소",

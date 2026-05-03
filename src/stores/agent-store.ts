@@ -4,18 +4,22 @@ import { api, type Agent, type CreateAgentInput } from "@/lib/tauri";
 interface AgentState {
   agents: Agent[];
   activeRuns: Map<string, string>; // agentId -> runId
+  activeRunChannels: Map<string, string>; // runId -> channelId
 
   fetchAgents: () => Promise<void>;
   createAgent: (input: CreateAgentInput) => Promise<Agent>;
   deleteAgent: (id: string) => Promise<void>;
   setRunActive: (agentId: string, runId: string) => void;
   setRunInactive: (agentId: string) => void;
+  setRunChannel: (runId: string, channelId: string) => void;
+  clearRunChannel: (runId: string) => void;
   getAgentById: (id: string) => Agent | undefined;
 }
 
 export const useAgentStore = create<AgentState>((set, get) => ({
   agents: [],
   activeRuns: new Map(),
+  activeRunChannels: new Map(),
 
   fetchAgents: async () => {
     try {
@@ -61,6 +65,22 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       const runs = new Map(state.activeRuns);
       runs.delete(agentId);
       return { activeRuns: runs };
+    });
+  },
+
+  setRunChannel: (runId, channelId) => {
+    set((state) => {
+      const channels = new Map(state.activeRunChannels);
+      channels.set(runId, channelId);
+      return { activeRunChannels: channels };
+    });
+  },
+
+  clearRunChannel: (runId) => {
+    set((state) => {
+      const channels = new Map(state.activeRunChannels);
+      channels.delete(runId);
+      return { activeRunChannels: channels };
     });
   },
 

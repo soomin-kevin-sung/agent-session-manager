@@ -1,6 +1,10 @@
 import { useState, useCallback, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useMessageStore } from "@/stores/message-store";
+import { useAgentStore } from "@/stores/agent-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
+import { api } from "@/lib/tauri";
+import { parseAgentIdFromDmChannelName } from "@/lib/channel-utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { SendHorizontal } from "lucide-react";
@@ -12,8 +16,41 @@ interface MessageInputProps {
 export function MessageInput({ channelId }: MessageInputProps) {
   const { t } = useTranslation();
   const sendMessage = useMessageStore((s) => s.sendMessage);
+  const addSystemMessage = useMessageStore((s) => s.addSystemMessage);
+  const setRunActive = useAgentStore((s) => s.setRunActive);
+  const setRunChannel = useAgentStore((s) => s.setRunChannel);
+  const channels = useWorkspaceStore((s) => s.channels);
   const [content, setContent] = useState("");
   const [error, setError] = useState(false);
+
+  const startAgentRun = useCallback(
+    async (prompt: string) => {
+      const channel = channels.find((ch) => ch.id === channelId);
+      if (channel?.channel_type !== "dm") return;
+
+      const agentId = parseAgentIdFromDmChannelName(channel.name);
+      if (!agentId) return;
+
+      try {
+        const runId = await api.runs.start({
+          agent_id: agentId,
+          prompt,
+          channel_id: channelId,
+          session_id: undefined,
+        });
+        setRunActive(agentId, runId);
+        setRunChannel(runId, channelId);
+      } catch (runError) {
+        const message =
+          runError instanceof Error ? runError.message : String(runError);
+        addSystemMessage(
+          channelId,
+          t("message.agentRunFailed", { message })
+        );
+      }
+    },
+    [addSystemMessage, channelId, channels, setRunActive, setRunChannel, t]
+  );
 
   const handleSend = useCallback(async () => {
     const trimmed = content.trim();
@@ -26,8 +63,11 @@ export function MessageInput({ channelId }: MessageInputProps) {
     } catch {
       setContent(saved);
       setError(true);
+      return;
     }
-  }, [content, channelId, sendMessage]);
+
+    await startAgentRun(trimmed);
+  }, [content, channelId, sendMessage, startAgentRun]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {

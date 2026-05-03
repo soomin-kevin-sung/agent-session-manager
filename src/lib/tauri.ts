@@ -113,6 +113,8 @@ export interface AgentPermission {
 // Run types
 export interface StartRunInput {
   agent_id: string;
+  session_id?: string;
+  channel_id?: string;
   prompt: string;
   work_dir?: string;
   max_turns?: number;
@@ -161,6 +163,7 @@ export interface AgentOutputPayload {
 export interface RunLifecyclePayload {
   run_id: string;
   agent_id: string;
+  channel_id?: string | null;
   exit_code: number | null;
   message: string | null;
 }

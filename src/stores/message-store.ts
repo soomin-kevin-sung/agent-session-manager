@@ -9,6 +9,7 @@ interface MessageState {
 
   fetchMessages: (channelId: string) => Promise<void>;
   addMessage: (channelId: string, message: Message) => void;
+  addSystemMessage: (channelId: string, content: string) => void;
   sendMessage: (channelId: string, content: string) => Promise<void>;
   getMessages: (channelId: string) => Message[];
   clearMessages: (channelId: string) => void;
@@ -49,9 +50,31 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     set((state) => ({
       messagesByChannel: {
         ...state.messagesByChannel,
-        [channelId]: [...(state.messagesByChannel[channelId] ?? []), message],
+        [channelId]: [
+          ...(state.messagesByChannel[channelId] ?? []).filter(
+            (existing) => existing.id !== message.id
+          ),
+          message,
+        ],
       },
     }));
+  },
+
+  addSystemMessage: (channelId, content) => {
+    get().addMessage(channelId, {
+      id: `local-system-${crypto.randomUUID()}`,
+      channel_id: channelId,
+      sender_type: "system",
+      sender_user_id: null,
+      sender_agent_id: null,
+      content,
+      message_type: "system",
+      status: "created",
+      metadata: null,
+      parent_id: null,
+      thread_root_id: null,
+      created_at: new Date().toISOString(),
+    });
   },
 
   sendMessage: async (channelId, content) => {

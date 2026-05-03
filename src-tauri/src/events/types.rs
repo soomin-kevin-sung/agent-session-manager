@@ -18,6 +18,7 @@ pub struct AgentOutputPayload {
 pub struct RunLifecyclePayload {
     pub run_id: String,
     pub agent_id: String,
+    pub channel_id: Option<String>,
     pub exit_code: Option<i32>,
     pub message: Option<String>,
 }

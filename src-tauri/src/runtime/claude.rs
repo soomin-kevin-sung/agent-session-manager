@@ -133,13 +133,6 @@ impl AgentRuntime for ClaudeRuntime {
                     events.push(RuntimeEvent::Cost { usd: cost });
                 }
 
-                if let Some(result_text) = parsed.get("result").and_then(|v| v.as_str()) {
-                    events.push(RuntimeEvent::Message {
-                        role: "result".into(),
-                        content: result_text.into(),
-                    });
-                }
-
                 events.push(RuntimeEvent::TurnCompleted { usage: None });
                 events
             }
@@ -213,6 +206,9 @@ mod tests {
         assert!(events
             .iter()
             .any(|e| matches!(e, RuntimeEvent::TurnCompleted { .. })));
+        assert!(!events
+            .iter()
+            .any(|e| matches!(e, RuntimeEvent::Message { .. })));
     }
 
     #[test]

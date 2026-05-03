@@ -11,11 +11,31 @@ use crate::{AppError, AppState};
 pub struct StartRunInput {
     pub agent_id: String,
     pub session_id: Option<String>,
+    pub channel_id: Option<String>,
     pub prompt: String,
     pub work_dir: Option<String>,
     pub max_turns: Option<u32>,
     pub allowed_tools: Option<Vec<String>>,
     pub extra_args: Option<Vec<String>>,
+}
+
+async fn resolve_run_channel_id(
+    pool: &db::DbPool,
+    channel_id: Option<&str>,
+    session_id: Option<&str>,
+) -> Option<String> {
+    if let Some(channel_id) = channel_id {
+        return Some(channel_id.to_string());
+    }
+
+    if let Some(session_id) = session_id {
+        return db::sessions::get_by_id(pool, session_id)
+            .await
+            .ok()
+            .map(|session| session.channel_id);
+    }
+
+    None
 }
 
 #[tauri::command]
@@ -83,26 +103,25 @@ pub async fn start_agent_run(
         .execute(&state.db)
         .await?;
 
-    // 8. Emit run:started
+    // 8. Resolve channel_id from explicit input first, then session if provided.
+    let channel_id = resolve_run_channel_id(
+        &state.db,
+        input.channel_id.as_deref(),
+        input.session_id.as_deref(),
+    )
+    .await;
+
+    // 9. Emit run:started
     let _ = app.emit(
         EVENT_RUN_STARTED,
         RunLifecyclePayload {
             run_id: run_id.clone(),
             agent_id: agent.id.clone(),
+            channel_id: channel_id.clone(),
             exit_code: None,
             message: None,
         },
     );
-
-    // 9. Resolve channel_id from session if provided
-    let channel_id: Option<String> = if let Some(ref sid) = input.session_id {
-        match db::sessions::get_by_id(&state.db, sid).await {
-            Ok(session) => Some(session.channel_id),
-            Err(_) => None,
-        }
-    } else {
-        None
-    };
 
     // 10. Spawn event forwarding task
     let app_fwd = app.clone();
@@ -145,6 +164,7 @@ pub async fn start_agent_run(
                     RunLifecyclePayload {
                         run_id: run_id_clone.clone(),
                         agent_id: agent_id_clone.clone(),
+                        channel_id: channel_id.clone(),
                         exit_code: *exit_code,
                         message: Some(format!(
                             "Run {} with exit code {:?}",
@@ -234,6 +254,7 @@ pub async fn stop_agent_run(
         RunLifecyclePayload {
             run_id: run_id.clone(),
             agent_id,
+            channel_id: None,
             exit_code: None,
             message: Some("Run cancellation requested by user".into()),
         },
@@ -245,4 +266,72 @@ pub async fn stop_agent_run(
 #[tauri::command]
 pub async fn list_active_runs(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
     Ok(state.process_manager.registry.active_run_ids().await)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db;
+
+    async fn setup_session(pool: &db::DbPool) -> (String, String) {
+        let ws = db::workspaces::create(
+            pool,
+            &db::workspaces::CreateWorkspace {
+                name: "WS".into(),
+                description: None,
+                created_by_type: "user".into(),
+                created_by_id: "u1".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        let ch = db::channels::create(
+            pool,
+            &db::channels::CreateChannel {
+                workspace_id: ws.id.clone(),
+                name: "session".into(),
+                channel_type: "group".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        let session = db::sessions::create(
+            pool,
+            &db::sessions::CreateSession {
+                workspace_id: ws.id,
+                channel_id: ch.id.clone(),
+                name: "Session".into(),
+                work_directory: "/tmp/project".into(),
+                git_branch: None,
+                created_by_type: "user".into(),
+                created_by_id: "u1".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        (session.id, ch.id)
+    }
+
+    #[tokio::test]
+    async fn resolve_run_channel_prefers_explicit_channel_id() {
+        let pool = db::create_test_pool().await;
+        let (session_id, _) = setup_session(&pool).await;
+
+        let channel_id = resolve_run_channel_id(&pool, Some("dm-channel"), Some(&session_id)).await;
+
+        assert_eq!(channel_id.as_deref(), Some("dm-channel"));
+    }
+
+    #[tokio::test]
+    async fn resolve_run_channel_uses_session_channel_when_channel_id_missing() {
+        let pool = db::create_test_pool().await;
+        let (session_id, session_channel_id) = setup_session(&pool).await;
+
+        let channel_id = resolve_run_channel_id(&pool, None, Some(&session_id)).await;
+
+        assert_eq!(channel_id, Some(session_channel_id));
+    }
 }

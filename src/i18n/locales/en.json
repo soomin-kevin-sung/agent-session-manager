@@ -109,7 +109,9 @@
     "send": "Send",
     "noMessages": "No messages yet. Start the conversation!",
     "today": "Today",
-    "system": "System"
+    "system": "System",
+    "thinking": "Agent is thinking...",
+    "agentRunFailed": "Agent run failed: {{message}}"
   },
   "common": {
     "cancel": "Cancel",
