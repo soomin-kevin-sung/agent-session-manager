@@ -91,12 +91,9 @@ export interface SessionMember {
 
 export interface CreateSessionInput {
   workspace_id: string;
-  channel_id: string;
   name: string;
   work_directory: string;
-  git_branch?: string;
-  created_by_type: string;
-  created_by_id: string;
+  agent_ids: string[];
 }
 
 // Permission types
@@ -154,8 +151,8 @@ export const api = {
     delete: (id: string) => invoke<void>("delete_agent", { id }),
   },
   workspaces: {
-    create: (input: { name: string; description?: string; created_by_type: string; created_by_id: string }) =>
-      invoke<Workspace>("create_workspace", { input }),
+    create: (name: string, description?: string) =>
+      invoke<Workspace>("create_workspace", { name, description }),
     list: () => invoke<Workspace[]>("list_workspaces"),
   },
   channels: {

@@ -1,11 +1,21 @@
 use tauri::State;
 use crate::{AppState, AppError};
-use crate::db::{workspaces, workspaces::CreateWorkspace};
+use crate::db::{workspaces};
 use crate::db::{channels, channels::CreateChannel};
 
 #[tauri::command]
-pub async fn create_workspace(state: State<'_, AppState>, input: CreateWorkspace) -> Result<workspaces::Workspace, AppError> {
-    workspaces::create(&state.db, &input).await
+pub async fn create_workspace(state: State<'_, AppState>, name: String, description: Option<String>) -> Result<workspaces::Workspace, AppError> {
+    let users = crate::db::users::list(&state.db).await?;
+    let user_id = users.first()
+        .map(|u| u.id.clone())
+        .ok_or_else(|| AppError::Internal { message: "No user found".into() })?;
+
+    workspaces::create(&state.db, &workspaces::CreateWorkspace {
+        name,
+        description,
+        created_by_type: "user".into(),
+        created_by_id: user_id,
+    }).await
 }
 
 #[tauri::command]

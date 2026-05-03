@@ -1,10 +1,32 @@
 use tauri::State;
 use crate::{AppState, AppError};
-use crate::db::sessions::{self, Session, SessionMember, CreateSession};
+use crate::db::sessions::{self, Session, SessionMember};
+use crate::orchestrator::session_lifecycle::SessionLifecycle;
+
+#[derive(serde::Deserialize)]
+pub struct CreateWorkSessionInput {
+    pub workspace_id: String,
+    pub name: String,
+    pub work_directory: String,
+    pub agent_ids: Vec<String>,
+}
 
 #[tauri::command]
-pub async fn create_session(state: State<'_, AppState>, input: CreateSession) -> Result<Session, AppError> {
-    sessions::create(&state.db, &input).await
+pub async fn create_session(state: State<'_, AppState>, input: CreateWorkSessionInput) -> Result<Session, AppError> {
+    let users = crate::db::users::list(&state.db).await?;
+    let user_id = users.first()
+        .map(|u| u.id.clone())
+        .ok_or_else(|| AppError::Internal { message: "No user found".into() })?;
+
+    SessionLifecycle::create_work_session(
+        &state.db,
+        &input.workspace_id,
+        &input.name,
+        &input.work_directory,
+        "user",
+        &user_id,
+        &input.agent_ids,
+    ).await
 }
 
 #[tauri::command]

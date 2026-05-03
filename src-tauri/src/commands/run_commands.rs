@@ -27,6 +27,14 @@ pub async fn start_agent_run(
     // 1. Look up agent from DB
     let agent = db::agents::get_by_id(&state.db, &input.agent_id).await?;
 
+    // 1b. Check if agent has execute_cli permission
+    let has_permission = db::permissions::check(&state.db, &agent.id, "execute_cli", "global", None).await?;
+    if !has_permission {
+        return Err(AppError::Permission {
+            message: format!("Agent {} does not have execute_cli permission", agent.id),
+        });
+    }
+
     // 2. Determine runtime
     let runtime_kind = RuntimeRegistry::runtime_for(&agent.runtime_type);
     let runtime = state.runtime_registry.get(runtime_kind)
@@ -82,7 +90,17 @@ pub async fn start_agent_run(
         message: None,
     });
 
-    // 9. Spawn event forwarding task
+    // 9. Resolve channel_id from session if provided
+    let channel_id: Option<String> = if let Some(ref sid) = input.session_id {
+        match db::sessions::get_by_id(&state.db, sid).await {
+            Ok(session) => Some(session.channel_id),
+            Err(_) => None,
+        }
+    } else {
+        None
+    };
+
+    // 10. Spawn event forwarding task
     let app_fwd = app.clone();
     let run_id_fwd = run_id.clone();
     let agent_id_fwd = agent.id.clone();
@@ -91,8 +109,6 @@ pub async fn start_agent_run(
     tokio::spawn(async move {
         let run_id_clone = run_id_fwd.clone();
         let agent_id_clone = agent_id_fwd.clone();
-        let mut channel_id: Option<String> = None;
-        let _ = &channel_id; // suppress unused warning
 
         while let Some(event) = event_rx.recv().await {
             // Check for ProcessExited — this drives DB status update

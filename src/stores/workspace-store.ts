@@ -42,12 +42,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setActiveChannel: (id: string) => set({ activeChannelId: id }),
 
   createWorkspace: async (name, description) => {
-    const ws = await api.workspaces.create({
-      name,
-      description,
-      created_by_type: "user",
-      created_by_id: "default",
-    });
+    const ws = await api.workspaces.create(name, description);
     await get().fetchWorkspaces();
     return ws;
   },

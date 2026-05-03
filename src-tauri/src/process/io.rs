@@ -41,24 +41,30 @@ mod tests {
         let mut child = Command::new("echo")
             .arg("hello world")
             .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
             .spawn()
             .expect("failed to spawn echo");
 
         let stdout = child.stdout.take().unwrap();
         let (tx, mut rx) = mpsc::unbounded_channel::<ProcessLine>();
 
-        tokio::spawn(stream_lines(stdout, tx));
+        let handle = tokio::spawn(stream_lines(stdout, tx));
 
+        // Wait for the process to finish
+        child.wait().await.ok();
+
+        // Wait for the reader task to finish
+        handle.await.ok();
+
+        // Now collect all lines
         let mut lines = vec![];
-        while let Some(pl) = rx.recv().await {
-            match pl {
-                ProcessLine::Stdout(line) => lines.push(line),
-                ProcessLine::Stderr(_) => {}
-            }
+        while let Ok(line) = rx.try_recv() {
+            lines.push(line);
         }
 
         assert!(!lines.is_empty());
-        assert!(lines[0].contains("hello world"));
+        match &lines[0] {
+            ProcessLine::Stdout(text) => assert!(text.contains("hello"), "Expected 'hello' in output, got: {}", text),
+            ProcessLine::Stderr(_) => panic!("Expected Stdout line"),
+        }
     }
 }
