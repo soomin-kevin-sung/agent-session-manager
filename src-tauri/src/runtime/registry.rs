@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use std::sync::Arc;
 use super::adapter::{AgentRuntime, RuntimeKind};
 use super::claude::ClaudeRuntime;
 use super::codex::CodexRuntime;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 pub struct RuntimeRegistry {
     runtimes: HashMap<RuntimeKind, Arc<dyn AgentRuntime>>,
@@ -11,7 +11,10 @@ pub struct RuntimeRegistry {
 impl RuntimeRegistry {
     pub fn new(claude_path: Option<String>, codex_path: Option<String>) -> Self {
         let mut runtimes: HashMap<RuntimeKind, Arc<dyn AgentRuntime>> = HashMap::new();
-        runtimes.insert(RuntimeKind::Claude, Arc::new(ClaudeRuntime::new(claude_path)));
+        runtimes.insert(
+            RuntimeKind::Claude,
+            Arc::new(ClaudeRuntime::new(claude_path)),
+        );
         runtimes.insert(RuntimeKind::Codex, Arc::new(CodexRuntime::new(codex_path)));
         Self { runtimes }
     }
@@ -45,8 +48,14 @@ mod tests {
 
     #[test]
     fn test_runtime_for_mapping() {
-        assert_eq!(RuntimeRegistry::runtime_for("claude_cli"), RuntimeKind::Claude);
-        assert_eq!(RuntimeRegistry::runtime_for("codex_cli"), RuntimeKind::Codex);
+        assert_eq!(
+            RuntimeRegistry::runtime_for("claude_cli"),
+            RuntimeKind::Claude
+        );
+        assert_eq!(
+            RuntimeRegistry::runtime_for("codex_cli"),
+            RuntimeKind::Codex
+        );
         assert_eq!(RuntimeRegistry::runtime_for("unknown"), RuntimeKind::Claude);
     }
 }

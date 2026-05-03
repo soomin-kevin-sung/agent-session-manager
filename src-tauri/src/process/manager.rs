@@ -2,9 +2,9 @@ use std::sync::Arc;
 use tokio::process::Command;
 use tokio::sync::mpsc;
 
-use crate::runtime::adapter::{AgentRuntime, CommandSpec, RuntimeEvent};
 use super::io::{self, ProcessLine};
 use super::registry::{ProcessRegistry, RunHandle, RunStatus};
+use crate::runtime::adapter::{AgentRuntime, CommandSpec, RuntimeEvent};
 
 pub struct ProcessManager {
     pub registry: Arc<ProcessRegistry>,
@@ -50,7 +50,6 @@ impl ProcessManager {
 
         #[cfg(target_os = "windows")]
         {
-            use std::os::windows::process::CommandExt;
             cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
         }
 
@@ -58,12 +57,18 @@ impl ProcessManager {
             message: format!("Failed to spawn {}: {}", spec.program, e),
         })?;
 
-        let stdout = child.stdout.take().ok_or_else(|| crate::AppError::Internal {
-            message: "Failed to capture stdout".into(),
-        })?;
-        let stderr = child.stderr.take().ok_or_else(|| crate::AppError::Internal {
-            message: "Failed to capture stderr".into(),
-        })?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| crate::AppError::Internal {
+                message: "Failed to capture stdout".into(),
+            })?;
+        let stderr = child
+            .stderr
+            .take()
+            .ok_or_else(|| crate::AppError::Internal {
+                message: "Failed to capture stderr".into(),
+            })?;
 
         // Raw lines channel (typed)
         let (line_tx, mut line_rx) = mpsc::unbounded_channel::<ProcessLine>();
@@ -104,12 +109,17 @@ impl ProcessManager {
         let (kill_tx, mut kill_rx) = mpsc::channel::<()>(1);
 
         // Store handle with kill_tx
-        self.registry.insert(run_id.clone(), RunHandle {
-            run_id: run_id.clone(),
-            agent_id,
-            status: RunStatus::Running,
-            kill_tx: Some(kill_tx),
-        }).await;
+        self.registry
+            .insert(
+                run_id.clone(),
+                RunHandle {
+                    run_id: run_id.clone(),
+                    agent_id,
+                    status: RunStatus::Running,
+                    kill_tx: Some(kill_tx),
+                },
+            )
+            .await;
 
         // Spawn child.wait() task — THIS is the authoritative exit handler
         let registry = self.registry.clone();
@@ -144,14 +154,19 @@ impl ProcessManager {
             tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
             // Check registry status before removing — was this a cancellation?
-            let was_cancelling = registry.get_status(&run_id_wait).await
-                == Some(RunStatus::Cancelling);
+            let was_cancelling =
+                registry.get_status(&run_id_wait).await == Some(RunStatus::Cancelling);
 
             // Emit ProcessExited event with cancellation context
-            let _ = event_tx.send(RuntimeEvent::ProcessExited { exit_code, was_cancelling });
+            let _ = event_tx.send(RuntimeEvent::ProcessExited {
+                exit_code,
+                was_cancelling,
+            });
 
             // Mark completed in registry and remove
-            registry.transition(&run_id_wait, RunStatus::Completed).await;
+            registry
+                .transition(&run_id_wait, RunStatus::Completed)
+                .await;
             registry.remove(&run_id_wait).await;
         });
 
@@ -161,15 +176,18 @@ impl ProcessManager {
     /// Kill a running process. Returns the agent_id for the killed run.
     pub async fn kill(&self, run_id: &str) -> Result<String, crate::AppError> {
         // Transition to cancelling first (prevents race with natural completion)
-        if !self.registry.transition(run_id, RunStatus::Cancelling).await {
+        if !self
+            .registry
+            .transition(run_id, RunStatus::Cancelling)
+            .await
+        {
             return Err(crate::AppError::NotFound {
                 entity: "run".into(),
                 id: run_id.into(),
             });
         }
 
-        let agent_id = self.registry.get_agent_id(run_id).await
-            .unwrap_or_default();
+        let agent_id = self.registry.get_agent_id(run_id).await.unwrap_or_default();
 
         // Send kill signal to the child process
         self.registry.send_kill(run_id).await;
@@ -180,7 +198,9 @@ impl ProcessManager {
     pub async fn shutdown_all(&self) {
         let run_ids = self.registry.active_run_ids().await;
         for run_id in run_ids {
-            self.registry.transition(&run_id, RunStatus::Cancelling).await;
+            self.registry
+                .transition(&run_id, RunStatus::Cancelling)
+                .await;
             self.registry.send_kill(&run_id).await;
             self.registry.remove(&run_id).await;
         }
@@ -205,7 +225,10 @@ mod tests {
             env_clear: false,
         };
 
-        let mut rx = manager.spawn("r1".into(), "a1".into(), runtime, spec).await.unwrap();
+        let mut rx = manager
+            .spawn("r1".into(), "a1".into(), runtime, spec)
+            .await
+            .unwrap();
 
         // Collect events until ProcessExited
         let mut got_exit = false;
@@ -235,7 +258,10 @@ mod tests {
             env_clear: false,
         };
 
-        let _rx = manager.spawn("r2".into(), "a2".into(), runtime, spec).await.unwrap();
+        let _rx = manager
+            .spawn("r2".into(), "a2".into(), runtime, spec)
+            .await
+            .unwrap();
 
         // Immediately after spawn, registry should have the entry
         // (it may be removed very quickly since echo exits fast, but agent_id should be retrievable)

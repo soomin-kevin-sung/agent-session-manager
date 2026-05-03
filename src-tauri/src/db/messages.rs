@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::AppResult;
 use super::DbPool;
+use crate::AppResult;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Message {
@@ -67,11 +67,16 @@ pub async fn get_by_id(pool: &DbPool, id: &str) -> AppResult<Message> {
         })
 }
 
-pub async fn list_by_channel(pool: &DbPool, channel_id: &str, limit: i64, before: Option<&str>) -> AppResult<Vec<Message>> {
+pub async fn list_by_channel(
+    pool: &DbPool,
+    channel_id: &str,
+    limit: i64,
+    before: Option<&str>,
+) -> AppResult<Vec<Message>> {
     if let Some(before_time) = before {
         sqlx::query_as::<_, Message>(
             "SELECT * FROM messages WHERE channel_id = ? AND deleted_at IS NULL AND created_at < ?
-             ORDER BY created_at DESC LIMIT ?"
+             ORDER BY created_at DESC LIMIT ?",
         )
         .bind(channel_id)
         .bind(before_time)
@@ -82,7 +87,7 @@ pub async fn list_by_channel(pool: &DbPool, channel_id: &str, limit: i64, before
     } else {
         sqlx::query_as::<_, Message>(
             "SELECT * FROM messages WHERE channel_id = ? AND deleted_at IS NULL
-             ORDER BY created_at DESC LIMIT ?"
+             ORDER BY created_at DESC LIMIT ?",
         )
         .bind(channel_id)
         .bind(limit)
@@ -115,22 +120,37 @@ mod tests {
     use crate::db;
 
     async fn setup(pool: &DbPool) -> (String, String) {
-        let ws = db::workspaces::create(pool, &db::workspaces::CreateWorkspace {
-            name: "WS".into(),
-            description: None,
-            created_by_type: "user".into(),
-            created_by_id: "u1".into(),
-        }).await.unwrap();
+        let ws = db::workspaces::create(
+            pool,
+            &db::workspaces::CreateWorkspace {
+                name: "WS".into(),
+                description: None,
+                created_by_type: "user".into(),
+                created_by_id: "u1".into(),
+            },
+        )
+        .await
+        .unwrap();
 
-        let ch = db::channels::create(pool, &db::channels::CreateChannel {
-            workspace_id: ws.id,
-            name: "general".into(),
-            channel_type: "group".into(),
-        }).await.unwrap();
+        let ch = db::channels::create(
+            pool,
+            &db::channels::CreateChannel {
+                workspace_id: ws.id,
+                name: "general".into(),
+                channel_type: "group".into(),
+            },
+        )
+        .await
+        .unwrap();
 
-        let user = db::users::create(pool, &db::users::CreateUser {
-            display_name: "User".into(),
-        }).await.unwrap();
+        let user = db::users::create(
+            pool,
+            &db::users::CreateUser {
+                display_name: "User".into(),
+            },
+        )
+        .await
+        .unwrap();
 
         (ch.id, user.id)
     }
@@ -140,17 +160,22 @@ mod tests {
         let pool = db::create_test_pool().await;
         let (ch_id, user_id) = setup(&pool).await;
 
-        let msg = create(&pool, &CreateMessage {
-            channel_id: ch_id.clone(),
-            sender_type: "user".into(),
-            sender_user_id: Some(user_id.clone()),
-            sender_agent_id: None,
-            content: "Hello".into(),
-            message_type: "chat".into(),
-            metadata: None,
-            parent_id: None,
-            thread_root_id: None,
-        }).await.unwrap();
+        let msg = create(
+            &pool,
+            &CreateMessage {
+                channel_id: ch_id.clone(),
+                sender_type: "user".into(),
+                sender_user_id: Some(user_id.clone()),
+                sender_agent_id: None,
+                content: "Hello".into(),
+                message_type: "chat".into(),
+                metadata: None,
+                parent_id: None,
+                thread_root_id: None,
+            },
+        )
+        .await
+        .unwrap();
 
         assert_eq!(msg.content, "Hello");
         assert_eq!(msg.status, "created");
@@ -164,17 +189,22 @@ mod tests {
         let pool = db::create_test_pool().await;
         let (ch_id, user_id) = setup(&pool).await;
 
-        let msg = create(&pool, &CreateMessage {
-            channel_id: ch_id,
-            sender_type: "user".into(),
-            sender_user_id: Some(user_id),
-            sender_agent_id: None,
-            content: "Test".into(),
-            message_type: "chat".into(),
-            metadata: None,
-            parent_id: None,
-            thread_root_id: None,
-        }).await.unwrap();
+        let msg = create(
+            &pool,
+            &CreateMessage {
+                channel_id: ch_id,
+                sender_type: "user".into(),
+                sender_user_id: Some(user_id),
+                sender_agent_id: None,
+                content: "Test".into(),
+                message_type: "chat".into(),
+                metadata: None,
+                parent_id: None,
+                thread_root_id: None,
+            },
+        )
+        .await
+        .unwrap();
 
         update_status(&pool, &msg.id, "delivered").await.unwrap();
         let fetched = get_by_id(&pool, &msg.id).await.unwrap();

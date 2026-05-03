@@ -1,11 +1,11 @@
 use serde::Deserialize;
 use tauri::{AppHandle, Emitter, State};
 
-use crate::{AppError, AppState};
 use crate::db;
 use crate::events::*;
-use crate::runtime::RuntimeEvent;
 use crate::runtime::registry::RuntimeRegistry;
+use crate::runtime::RuntimeEvent;
+use crate::{AppError, AppState};
 
 #[derive(Debug, Deserialize)]
 pub struct StartRunInput {
@@ -28,7 +28,8 @@ pub async fn start_agent_run(
     let agent = db::agents::get_by_id(&state.db, &input.agent_id).await?;
 
     // 1b. Check if agent has execute_cli permission
-    let has_permission = db::permissions::check(&state.db, &agent.id, "execute_cli", "global", None).await?;
+    let has_permission =
+        db::permissions::check(&state.db, &agent.id, "execute_cli", "global", None).await?;
     if !has_permission {
         return Err(AppError::Permission {
             message: format!("Agent {} does not have execute_cli permission", agent.id),
@@ -37,7 +38,9 @@ pub async fn start_agent_run(
 
     // 2. Determine runtime
     let runtime_kind = RuntimeRegistry::runtime_for(&agent.runtime_type);
-    let runtime = state.runtime_registry.get(runtime_kind)
+    let runtime = state
+        .runtime_registry
+        .get(runtime_kind)
         .ok_or_else(|| AppError::Internal {
             message: format!("No runtime registered for {:?}", runtime_kind),
         })?;
@@ -58,7 +61,7 @@ pub async fn start_agent_run(
     let cli_args_json = serde_json::to_string(&spec.args).unwrap_or_default();
     sqlx::query(
         "INSERT INTO agent_runs (id, agent_id, session_id, cli_command, cli_args, process_status)
-         VALUES (?, ?, ?, ?, ?, 'starting')"
+         VALUES (?, ?, ?, ?, ?, 'starting')",
     )
     .bind(&run_id)
     .bind(&agent.id)
@@ -69,12 +72,10 @@ pub async fn start_agent_run(
     .await?;
 
     // 6. Spawn process
-    let mut event_rx = state.process_manager.spawn(
-        run_id.clone(),
-        agent.id.clone(),
-        runtime,
-        spec,
-    ).await?;
+    let mut event_rx = state
+        .process_manager
+        .spawn(run_id.clone(), agent.id.clone(), runtime, spec)
+        .await?;
 
     // 7. Update status to running after successful spawn
     sqlx::query("UPDATE agent_runs SET process_status = 'running', started_at = datetime('now') WHERE id = ?")
@@ -83,12 +84,15 @@ pub async fn start_agent_run(
         .await?;
 
     // 8. Emit run:started
-    let _ = app.emit(EVENT_RUN_STARTED, RunLifecyclePayload {
-        run_id: run_id.clone(),
-        agent_id: agent.id.clone(),
-        exit_code: None,
-        message: None,
-    });
+    let _ = app.emit(
+        EVENT_RUN_STARTED,
+        RunLifecyclePayload {
+            run_id: run_id.clone(),
+            agent_id: agent.id.clone(),
+            exit_code: None,
+            message: None,
+        },
+    );
 
     // 9. Resolve channel_id from session if provided
     let channel_id: Option<String> = if let Some(ref sid) = input.session_id {
@@ -112,7 +116,11 @@ pub async fn start_agent_run(
 
         while let Some(event) = event_rx.recv().await {
             // Check for ProcessExited — this drives DB status update
-            if let RuntimeEvent::ProcessExited { exit_code, was_cancelling } = &event {
+            if let RuntimeEvent::ProcessExited {
+                exit_code,
+                was_cancelling,
+            } = &event
+            {
                 // Determine final status based on was_cancelling + exit code
                 let (final_status, event_name) = if *was_cancelling {
                     ("cancelled", EVENT_RUN_CANCELLED)
@@ -132,12 +140,18 @@ pub async fn start_agent_run(
                     .ok();
 
                 // Emit lifecycle event
-                let _ = app_fwd.emit(event_name, RunLifecyclePayload {
-                    run_id: run_id_clone.clone(),
-                    agent_id: agent_id_clone.clone(),
-                    exit_code: *exit_code,
-                    message: Some(format!("Run {} with exit code {:?}", final_status, exit_code)),
-                });
+                let _ = app_fwd.emit(
+                    event_name,
+                    RunLifecyclePayload {
+                        run_id: run_id_clone.clone(),
+                        agent_id: agent_id_clone.clone(),
+                        exit_code: *exit_code,
+                        message: Some(format!(
+                            "Run {} with exit code {:?}",
+                            final_status, exit_code
+                        )),
+                    },
+                );
 
                 break;
             }
@@ -147,17 +161,22 @@ pub async fn start_agent_run(
                 RuntimeEvent::Message { role: _, content } => {
                     // Store agent messages as actual messages in the channel
                     if let Some(ref ch_id) = channel_id {
-                        db::messages::create(&db_pool, &db::messages::CreateMessage {
-                            channel_id: ch_id.clone(),
-                            sender_type: "agent".into(),
-                            sender_agent_id: Some(agent_id_clone.clone()),
-                            sender_user_id: None,
-                            content: content.clone(),
-                            message_type: "chat".into(),
-                            metadata: None,
-                            parent_id: None,
-                            thread_root_id: None,
-                        }).await.ok();
+                        db::messages::create(
+                            &db_pool,
+                            &db::messages::CreateMessage {
+                                channel_id: ch_id.clone(),
+                                sender_type: "agent".into(),
+                                sender_agent_id: Some(agent_id_clone.clone()),
+                                sender_user_id: None,
+                                content: content.clone(),
+                                message_type: "chat".into(),
+                                metadata: None,
+                                parent_id: None,
+                                thread_root_id: None,
+                            },
+                        )
+                        .await
+                        .ok();
                     }
                 }
                 RuntimeEvent::RawLog { stream, line } => {
@@ -180,11 +199,14 @@ pub async fn start_agent_run(
             }
 
             // Forward all other events to frontend
-            let _ = app_fwd.emit(EVENT_AGENT_OUTPUT, AgentOutputPayload {
-                run_id: run_id_clone.clone(),
-                agent_id: agent_id_clone.clone(),
-                event,
-            });
+            let _ = app_fwd.emit(
+                EVENT_AGENT_OUTPUT,
+                AgentOutputPayload {
+                    run_id: run_id_clone.clone(),
+                    agent_id: agent_id_clone.clone(),
+                    event,
+                },
+            );
         }
     });
 
@@ -207,19 +229,20 @@ pub async fn stop_agent_run(
         .ok();
 
     // Emit cancelling (not cancelled — cancelled is emitted when ProcessExited arrives)
-    let _ = app.emit(EVENT_RUN_CANCELLING, RunLifecyclePayload {
-        run_id: run_id.clone(),
-        agent_id,
-        exit_code: None,
-        message: Some("Run cancellation requested by user".into()),
-    });
+    let _ = app.emit(
+        EVENT_RUN_CANCELLING,
+        RunLifecyclePayload {
+            run_id: run_id.clone(),
+            agent_id,
+            exit_code: None,
+            message: Some("Run cancellation requested by user".into()),
+        },
+    );
 
     Ok(())
 }
 
 #[tauri::command]
-pub async fn list_active_runs(
-    state: State<'_, AppState>,
-) -> Result<Vec<String>, AppError> {
+pub async fn list_active_runs(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
     Ok(state.process_manager.registry.active_run_ids().await)
 }

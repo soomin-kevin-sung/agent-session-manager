@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::AppResult;
 use super::DbPool;
+use crate::AppResult;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Agent {
@@ -23,8 +23,8 @@ pub struct Agent {
 #[derive(Debug, Deserialize)]
 pub struct CreateAgent {
     pub name: String,
-    pub runtime_type: String,  // "claude_cli" | "codex_cli"
-    pub provider: String,      // "anthropic" | "openai"
+    pub runtime_type: String, // "claude_cli" | "codex_cli"
+    pub provider: String,     // "anthropic" | "openai"
     pub model_name: Option<String>,
     pub persona: Option<String>,
     pub config: Option<String>,
@@ -118,7 +118,11 @@ pub async fn delete(pool: &DbPool, id: &str) -> AppResult<()> {
     Ok(())
 }
 
-pub async fn list_by_creator(pool: &DbPool, creator_type: &str, creator_id: &str) -> AppResult<Vec<Agent>> {
+pub async fn list_by_creator(
+    pool: &DbPool,
+    creator_type: &str,
+    creator_id: &str,
+) -> AppResult<Vec<Agent>> {
     sqlx::query_as::<_, Agent>(
         "SELECT * FROM agents WHERE created_by_type = ? AND created_by_id = ? ORDER BY created_at DESC"
     )
@@ -166,13 +170,19 @@ mod tests {
         let pool = db::create_test_pool().await;
         let agent = create(&pool, &test_create_input()).await.unwrap();
 
-        let updated = update(&pool, &agent.id, &UpdateAgent {
-            name: Some("Renamed".into()),
-            model_name: None,
-            persona: None,
-            config: None,
-            enabled: Some(false),
-        }).await.unwrap();
+        let updated = update(
+            &pool,
+            &agent.id,
+            &UpdateAgent {
+                name: Some("Renamed".into()),
+                model_name: None,
+                persona: None,
+                config: None,
+                enabled: Some(false),
+            },
+        )
+        .await
+        .unwrap();
 
         assert_eq!(updated.name, "Renamed");
         assert!(!updated.enabled);

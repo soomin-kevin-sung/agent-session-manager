@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::AppResult;
 use super::DbPool;
+use crate::AppResult;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct AgentPermission {
@@ -46,12 +46,18 @@ pub async fn grant(pool: &DbPool, input: &GrantPermission) -> AppResult<AgentPer
     .map_err(Into::into)
 }
 
-pub async fn check(pool: &DbPool, agent_id: &str, permission_type: &str, scope_type: &str, scope_id: Option<&str>) -> AppResult<bool> {
+pub async fn check(
+    pool: &DbPool,
+    agent_id: &str,
+    permission_type: &str,
+    scope_type: &str,
+    scope_id: Option<&str>,
+) -> AppResult<bool> {
     let result = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM agent_permissions
          WHERE agent_id = ? AND permission_type = ? AND revoked_at IS NULL
          AND (expires_at IS NULL OR expires_at > datetime('now'))
-         AND (scope_type = 'global' OR (scope_type = ? AND (scope_id IS NULL OR scope_id = ?)))"
+         AND (scope_type = 'global' OR (scope_type = ? AND (scope_id IS NULL OR scope_id = ?)))",
     )
     .bind(agent_id)
     .bind(permission_type)
@@ -87,11 +93,22 @@ mod tests {
     use crate::db;
 
     async fn setup_agent(pool: &DbPool) -> String {
-        db::agents::create(pool, &db::agents::CreateAgent {
-            name: "Agent".into(), runtime_type: "claude_cli".into(), provider: "anthropic".into(),
-            model_name: None, persona: None, config: None,
-            created_by_type: "user".into(), created_by_id: "u1".into(),
-        }).await.unwrap().id
+        db::agents::create(
+            pool,
+            &db::agents::CreateAgent {
+                name: "Agent".into(),
+                runtime_type: "claude_cli".into(),
+                provider: "anthropic".into(),
+                model_name: None,
+                persona: None,
+                config: None,
+                created_by_type: "user".into(),
+                created_by_id: "u1".into(),
+            },
+        )
+        .await
+        .unwrap()
+        .id
     }
 
     #[tokio::test]
@@ -99,17 +116,26 @@ mod tests {
         let pool = db::create_test_pool().await;
         let agent_id = setup_agent(&pool).await;
 
-        grant(&pool, &GrantPermission {
-            agent_id: agent_id.clone(),
-            scope_type: "global".into(),
-            scope_id: None,
-            permission_type: "create_agent".into(),
-            granted_by_type: "user".into(),
-            granted_by_id: "u1".into(),
-        }).await.unwrap();
+        grant(
+            &pool,
+            &GrantPermission {
+                agent_id: agent_id.clone(),
+                scope_type: "global".into(),
+                scope_id: None,
+                permission_type: "create_agent".into(),
+                granted_by_type: "user".into(),
+                granted_by_id: "u1".into(),
+            },
+        )
+        .await
+        .unwrap();
 
-        assert!(check(&pool, &agent_id, "create_agent", "global", None).await.unwrap());
-        assert!(!check(&pool, &agent_id, "execute_cli", "global", None).await.unwrap());
+        assert!(check(&pool, &agent_id, "create_agent", "global", None)
+            .await
+            .unwrap());
+        assert!(!check(&pool, &agent_id, "execute_cli", "global", None)
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -117,14 +143,23 @@ mod tests {
         let pool = db::create_test_pool().await;
         let agent_id = setup_agent(&pool).await;
 
-        let perm = grant(&pool, &GrantPermission {
-            agent_id: agent_id.clone(),
-            scope_type: "global".into(), scope_id: None,
-            permission_type: "create_agent".into(),
-            granted_by_type: "user".into(), granted_by_id: "u1".into(),
-        }).await.unwrap();
+        let perm = grant(
+            &pool,
+            &GrantPermission {
+                agent_id: agent_id.clone(),
+                scope_type: "global".into(),
+                scope_id: None,
+                permission_type: "create_agent".into(),
+                granted_by_type: "user".into(),
+                granted_by_id: "u1".into(),
+            },
+        )
+        .await
+        .unwrap();
 
         revoke(&pool, &perm.id).await.unwrap();
-        assert!(!check(&pool, &agent_id, "create_agent", "global", None).await.unwrap());
+        assert!(!check(&pool, &agent_id, "create_agent", "global", None)
+            .await
+            .unwrap());
     }
 }

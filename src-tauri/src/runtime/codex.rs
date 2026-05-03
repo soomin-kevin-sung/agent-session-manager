@@ -1,5 +1,5 @@
-use crate::AppResult;
 use super::adapter::*;
+use crate::AppResult;
 
 pub struct CodexRuntime {
     pub cli_path: String,
@@ -76,25 +76,35 @@ impl AgentRuntime for CodexRuntime {
 
         match event_type {
             "thread.started" => {
-                let tid = parsed.get("thread_id")
+                let tid = parsed
+                    .get("thread_id")
                     .and_then(|v| v.as_str())
                     .unwrap_or("unknown");
-                vec![RuntimeEvent::SessionStarted { session_id: tid.into() }]
+                vec![RuntimeEvent::SessionStarted {
+                    session_id: tid.into(),
+                }]
             }
             "turn.started" => vec![RuntimeEvent::TurnStarted],
             "turn.completed" => {
                 let usage = parsed.get("usage").and_then(|u| {
                     Some(TokenUsage {
                         input_tokens: u.get("input_tokens")?.as_i64()?,
-                        cached_input_tokens: u.get("cached_input_tokens").and_then(|v| v.as_i64()).unwrap_or(0),
+                        cached_input_tokens: u
+                            .get("cached_input_tokens")
+                            .and_then(|v| v.as_i64())
+                            .unwrap_or(0),
                         output_tokens: u.get("output_tokens")?.as_i64()?,
-                        reasoning_output_tokens: u.get("reasoning_output_tokens").and_then(|v| v.as_i64()).unwrap_or(0),
+                        reasoning_output_tokens: u
+                            .get("reasoning_output_tokens")
+                            .and_then(|v| v.as_i64())
+                            .unwrap_or(0),
                     })
                 });
                 vec![RuntimeEvent::TurnCompleted { usage }]
             }
             "turn.failed" => {
-                let msg = parsed.get("message")
+                let msg = parsed
+                    .get("message")
                     .or_else(|| parsed.get("error"))
                     .and_then(|v| v.as_str())
                     .unwrap_or("Unknown failure")
@@ -102,7 +112,8 @@ impl AgentRuntime for CodexRuntime {
                 vec![RuntimeEvent::TurnFailed { message: msg }]
             }
             "error" => {
-                let msg = parsed.get("message")
+                let msg = parsed
+                    .get("message")
                     .and_then(|v| v.as_str())
                     .unwrap_or("Unknown error")
                     .to_string();
@@ -113,10 +124,14 @@ impl AgentRuntime for CodexRuntime {
                 let item_type = item.get("type").and_then(|v| v.as_str()).unwrap_or("");
                 match item_type {
                     "command_execution" => {
-                        let cmd = item.get("command").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        let cmd = item
+                            .get("command")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
                         vec![RuntimeEvent::CommandStarted { command: cmd }]
                     }
-                    _ => vec![]
+                    _ => vec![],
                 }
             }
             "item.completed" => {
@@ -124,14 +139,29 @@ impl AgentRuntime for CodexRuntime {
                 let item_type = item.get("type").and_then(|v| v.as_str()).unwrap_or("");
                 match item_type {
                     "agent_message" => {
-                        let text = item.get("text").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                        vec![RuntimeEvent::Message { role: "assistant".into(), content: text }]
+                        let text = item
+                            .get("text")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        vec![RuntimeEvent::Message {
+                            role: "assistant".into(),
+                            content: text,
+                        }]
                     }
                     "command_execution" => {
-                        let cmd = item.get("command").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                        let exit_code = item.get("exit_code").and_then(|v| v.as_i64()).map(|v| v as i32);
+                        let cmd = item
+                            .get("command")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let exit_code = item
+                            .get("exit_code")
+                            .and_then(|v| v.as_i64())
+                            .map(|v| v as i32);
                         // Accept both "aggregated_output" and "output" for version tolerance
-                        let output = item.get("aggregated_output")
+                        let output = item
+                            .get("aggregated_output")
                             .or_else(|| item.get("output"))
                             .and_then(|v| v.as_str())
                             .unwrap_or("")
@@ -139,12 +169,18 @@ impl AgentRuntime for CodexRuntime {
 
                         let mut events = vec![];
                         if !output.is_empty() {
-                            events.push(RuntimeEvent::CommandOutput { command: cmd.clone(), output });
+                            events.push(RuntimeEvent::CommandOutput {
+                                command: cmd.clone(),
+                                output,
+                            });
                         }
-                        events.push(RuntimeEvent::CommandCompleted { command: cmd, exit_code });
+                        events.push(RuntimeEvent::CommandCompleted {
+                            command: cmd,
+                            exit_code,
+                        });
                         events
                     }
-                    _ => vec![]
+                    _ => vec![],
                 }
             }
             // Preserve unknown structured events as RawLog
@@ -165,7 +201,9 @@ mod tests {
     #[test]
     fn test_build_command() {
         let rt = CodexRuntime::new(None);
-        let spec = rt.build_command("hello", Some("/tmp"), None, None, None).unwrap();
+        let spec = rt
+            .build_command("hello", Some("/tmp"), None, None, None)
+            .unwrap();
         assert_eq!(spec.program, "codex");
         assert!(spec.args.contains(&"exec".into()));
         assert!(spec.args.contains(&"--json".into()));
@@ -177,23 +215,27 @@ mod tests {
     fn test_parse_thread_started() {
         let rt = CodexRuntime::new(None);
         let events = rt.parse_output_line(r#"{"type":"thread.started","thread_id":"abc"}"#);
-        assert!(matches!(&events[0], RuntimeEvent::SessionStarted { session_id } if session_id == "abc"));
+        assert!(
+            matches!(&events[0], RuntimeEvent::SessionStarted { session_id } if session_id == "abc")
+        );
     }
 
     #[test]
     fn test_parse_turn_completed_with_usage() {
         let rt = CodexRuntime::new(None);
         let events = rt.parse_output_line(
-            r#"{"type":"turn.completed","usage":{"input_tokens":1000,"output_tokens":200}}"#
+            r#"{"type":"turn.completed","usage":{"input_tokens":1000,"output_tokens":200}}"#,
         );
-        assert!(matches!(&events[0], RuntimeEvent::TurnCompleted { usage: Some(u) } if u.input_tokens == 1000));
+        assert!(
+            matches!(&events[0], RuntimeEvent::TurnCompleted { usage: Some(u) } if u.input_tokens == 1000)
+        );
     }
 
     #[test]
     fn test_parse_agent_message() {
         let rt = CodexRuntime::new(None);
         let events = rt.parse_output_line(
-            r#"{"type":"item.completed","item":{"type":"agent_message","text":"Done"}}"#
+            r#"{"type":"item.completed","item":{"type":"agent_message","text":"Done"}}"#,
         );
         assert!(matches!(&events[0], RuntimeEvent::Message { content, .. } if content == "Done"));
     }
@@ -205,8 +247,16 @@ mod tests {
             r#"{"type":"item.completed","item":{"type":"command_execution","command":"ls","exit_code":0,"aggregated_output":"file1\nfile2"}}"#
         );
         assert_eq!(events.len(), 2);
-        assert!(matches!(&events[0], RuntimeEvent::CommandOutput { output, .. } if output == "file1\nfile2"));
-        assert!(matches!(&events[1], RuntimeEvent::CommandCompleted { exit_code: Some(0), .. }));
+        assert!(
+            matches!(&events[0], RuntimeEvent::CommandOutput { output, .. } if output == "file1\nfile2")
+        );
+        assert!(matches!(
+            &events[1],
+            RuntimeEvent::CommandCompleted {
+                exit_code: Some(0),
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -215,21 +265,27 @@ mod tests {
         let events = rt.parse_output_line(
             r#"{"type":"item.completed","item":{"type":"command_execution","command":"ls","exit_code":0,"output":"fallback"}}"#
         );
-        assert!(matches!(&events[0], RuntimeEvent::CommandOutput { output, .. } if output == "fallback"));
+        assert!(
+            matches!(&events[0], RuntimeEvent::CommandOutput { output, .. } if output == "fallback")
+        );
     }
 
     #[test]
     fn test_parse_turn_failed() {
         let rt = CodexRuntime::new(None);
         let events = rt.parse_output_line(r#"{"type":"turn.failed","message":"Auth error"}"#);
-        assert!(matches!(&events[0], RuntimeEvent::TurnFailed { message } if message == "Auth error"));
+        assert!(
+            matches!(&events[0], RuntimeEvent::TurnFailed { message } if message == "Auth error")
+        );
     }
 
     #[test]
     fn test_parse_top_level_error() {
         let rt = CodexRuntime::new(None);
         let events = rt.parse_output_line(r#"{"type":"error","message":"Connection failed"}"#);
-        assert!(matches!(&events[0], RuntimeEvent::Error { message } if message == "Connection failed"));
+        assert!(
+            matches!(&events[0], RuntimeEvent::Error { message } if message == "Connection failed")
+        );
     }
 
     #[test]

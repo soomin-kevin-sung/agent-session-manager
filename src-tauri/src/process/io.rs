@@ -1,5 +1,5 @@
 use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::{ChildStdout, ChildStderr};
+use tokio::process::{ChildStderr, ChildStdout};
 use tokio::sync::mpsc;
 
 /// Typed line output from child process I/O streams.
@@ -38,11 +38,24 @@ mod tests {
 
     #[tokio::test]
     async fn test_stream_lines_captures_output() {
-        let mut child = Command::new("echo")
-            .arg("hello world")
+        #[cfg(target_os = "windows")]
+        let mut command = {
+            let mut command = Command::new("cmd");
+            command.args(["/C", "echo hello world"]);
+            command
+        };
+
+        #[cfg(not(target_os = "windows"))]
+        let mut command = {
+            let mut command = Command::new("sh");
+            command.args(["-c", "printf '%s\n' 'hello world'"]);
+            command
+        };
+
+        let mut child = command
             .stdout(std::process::Stdio::piped())
             .spawn()
-            .expect("failed to spawn echo");
+            .expect("failed to spawn stdout test command");
 
         let stdout = child.stdout.take().unwrap();
         let (tx, mut rx) = mpsc::unbounded_channel::<ProcessLine>();
@@ -63,7 +76,11 @@ mod tests {
 
         assert!(!lines.is_empty());
         match &lines[0] {
-            ProcessLine::Stdout(text) => assert!(text.contains("hello"), "Expected 'hello' in output, got: {}", text),
+            ProcessLine::Stdout(text) => assert!(
+                text.contains("hello"),
+                "Expected 'hello' in output, got: {}",
+                text
+            ),
             ProcessLine::Stderr(_) => panic!("Expected Stdout line"),
         }
     }

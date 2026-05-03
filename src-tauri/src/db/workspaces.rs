@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::AppResult;
 use super::DbPool;
+use crate::AppResult;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Workspace {
@@ -80,12 +80,17 @@ mod tests {
     async fn test_workspace_crud() {
         let pool = db::create_test_pool().await;
 
-        let ws = create(&pool, &CreateWorkspace {
-            name: "Project Alpha".into(),
-            description: Some("Main project".into()),
-            created_by_type: "user".into(),
-            created_by_id: "user-1".into(),
-        }).await.unwrap();
+        let ws = create(
+            &pool,
+            &CreateWorkspace {
+                name: "Project Alpha".into(),
+                description: Some("Main project".into()),
+                created_by_type: "user".into(),
+                created_by_id: "user-1".into(),
+            },
+        )
+        .await
+        .unwrap();
 
         assert_eq!(ws.name, "Project Alpha");
 

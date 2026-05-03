@@ -1,45 +1,16 @@
-use crate::db::{DbPool, permissions};
-use crate::AppResult;
+use crate::db::{permissions, DbPool};
 use crate::AppError;
+use crate::AppResult;
 
 pub struct PermissionValidator;
 
 impl PermissionValidator {
-    /// Check if an agent has a specific permission in the given scope.
-    pub async fn check_permission(
-        pool: &DbPool,
-        agent_id: &str,
-        permission_type: &str,
-        scope_type: &str,
-        scope_id: Option<&str>,
-    ) -> AppResult<bool> {
-        permissions::check(pool, agent_id, permission_type, scope_type, scope_id).await
-    }
-
     /// Verify an agent can create another agent (has create_agent permission).
-    pub async fn can_create_agent(
-        pool: &DbPool,
-        creator_id: &str,
-    ) -> AppResult<()> {
+    pub async fn can_create_agent(pool: &DbPool, creator_id: &str) -> AppResult<()> {
         let allowed = permissions::check(pool, creator_id, "create_agent", "global", None).await?;
         if !allowed {
             return Err(AppError::Permission {
                 message: format!("Agent {} does not have create_agent permission", creator_id),
-            });
-        }
-        Ok(())
-    }
-
-    /// Verify an agent can create a session (has create_session permission).
-    pub async fn can_create_session(
-        pool: &DbPool,
-        creator_id: &str,
-        workspace_id: &str,
-    ) -> AppResult<()> {
-        let allowed = permissions::check(pool, creator_id, "create_session", "workspace", Some(workspace_id)).await?;
-        if !allowed {
-            return Err(AppError::Permission {
-                message: format!("Agent {} does not have create_session permission in workspace {}", creator_id, workspace_id),
             });
         }
         Ok(())
@@ -53,7 +24,8 @@ impl PermissionValidator {
         child_permissions: &[String],
     ) -> AppResult<()> {
         let parent_perms = permissions::list_for_agent(pool, parent_id).await?;
-        let parent_perm_types: Vec<&str> = parent_perms.iter()
+        let parent_perm_types: Vec<&str> = parent_perms
+            .iter()
             .map(|p| p.permission_type.as_str())
             .collect();
 
@@ -79,14 +51,21 @@ mod tests {
     use crate::db::permissions::GrantPermission;
 
     async fn setup(pool: &DbPool) -> String {
-        let agent = db::agents::create(pool, &db::agents::CreateAgent {
-            name: "TestAgent".into(),
-            runtime_type: "claude_cli".into(),
-            provider: "anthropic".into(),
-            model_name: None, persona: None, config: None,
-            created_by_type: "user".into(),
-            created_by_id: "u1".into(),
-        }).await.unwrap();
+        let agent = db::agents::create(
+            pool,
+            &db::agents::CreateAgent {
+                name: "TestAgent".into(),
+                runtime_type: "claude_cli".into(),
+                provider: "anthropic".into(),
+                model_name: None,
+                persona: None,
+                config: None,
+                created_by_type: "user".into(),
+                created_by_id: "u1".into(),
+            },
+        )
+        .await
+        .unwrap();
         agent.id
     }
 
@@ -100,14 +79,19 @@ mod tests {
         assert!(result.is_err());
 
         // Grant permission
-        permissions::grant(&pool, &GrantPermission {
-            agent_id: agent_id.clone(),
-            scope_type: "global".into(),
-            scope_id: None,
-            permission_type: "create_agent".into(),
-            granted_by_type: "user".into(),
-            granted_by_id: "u1".into(),
-        }).await.unwrap();
+        permissions::grant(
+            &pool,
+            &GrantPermission {
+                agent_id: agent_id.clone(),
+                scope_type: "global".into(),
+                scope_id: None,
+                permission_type: "create_agent".into(),
+                granted_by_type: "user".into(),
+                granted_by_id: "u1".into(),
+            },
+        )
+        .await
+        .unwrap();
 
         // With permission — should succeed
         let result = PermissionValidator::can_create_agent(&pool, &agent_id).await;
@@ -120,30 +104,41 @@ mod tests {
         let parent_id = setup(&pool).await;
 
         // Grant parent some permissions
-        permissions::grant(&pool, &GrantPermission {
-            agent_id: parent_id.clone(),
-            scope_type: "global".into(),
-            scope_id: None,
-            permission_type: "create_agent".into(),
-            granted_by_type: "user".into(),
-            granted_by_id: "u1".into(),
-        }).await.unwrap();
+        permissions::grant(
+            &pool,
+            &GrantPermission {
+                agent_id: parent_id.clone(),
+                scope_type: "global".into(),
+                scope_id: None,
+                permission_type: "create_agent".into(),
+                granted_by_type: "user".into(),
+                granted_by_id: "u1".into(),
+            },
+        )
+        .await
+        .unwrap();
 
-        permissions::grant(&pool, &GrantPermission {
-            agent_id: parent_id.clone(),
-            scope_type: "global".into(),
-            scope_id: None,
-            permission_type: "execute_cli".into(),
-            granted_by_type: "user".into(),
-            granted_by_id: "u1".into(),
-        }).await.unwrap();
+        permissions::grant(
+            &pool,
+            &GrantPermission {
+                agent_id: parent_id.clone(),
+                scope_type: "global".into(),
+                scope_id: None,
+                permission_type: "execute_cli".into(),
+                granted_by_type: "user".into(),
+                granted_by_id: "u1".into(),
+            },
+        )
+        .await
+        .unwrap();
 
         // Valid subset — should pass
         let result = PermissionValidator::validate_permission_inheritance(
             &pool,
             &parent_id,
             &["create_agent".into(), "execute_cli".into()],
-        ).await;
+        )
+        .await;
         assert!(result.is_ok());
 
         // Invalid — child wants permission parent doesn't have
@@ -151,7 +146,8 @@ mod tests {
             &pool,
             &parent_id,
             &["create_agent".into(), "review".into()],
-        ).await;
+        )
+        .await;
         assert!(result.is_err());
     }
 }

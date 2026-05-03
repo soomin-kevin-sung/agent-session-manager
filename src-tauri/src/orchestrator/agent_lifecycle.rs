@@ -1,4 +1,4 @@
-use crate::db::{self, DbPool, agents::CreateAgent, permissions::GrantPermission};
+use crate::db::{self, agents::CreateAgent, permissions::GrantPermission, DbPool};
 use crate::security::permission_validator::PermissionValidator;
 use crate::AppResult;
 
@@ -17,7 +17,12 @@ impl AgentLifecycle {
         PermissionValidator::can_create_agent(pool, creator_agent_id).await?;
 
         // 2. Validate permission inheritance
-        PermissionValidator::validate_permission_inheritance(pool, creator_agent_id, child_permissions).await?;
+        PermissionValidator::validate_permission_inheritance(
+            pool,
+            creator_agent_id,
+            child_permissions,
+        )
+        .await?;
 
         // 3. Create the agent
         let agent = db::agents::create(pool, input).await?;
@@ -36,14 +41,19 @@ impl AgentLifecycle {
 
         // 5. Grant permissions to the new agent — clean up on failure
         for perm in child_permissions {
-            if let Err(e) = db::permissions::grant(pool, &GrantPermission {
-                agent_id: agent.id.clone(),
-                scope_type: "global".into(),
-                scope_id: None,
-                permission_type: perm.clone(),
-                granted_by_type: "agent".into(),
-                granted_by_id: creator_agent_id.into(),
-            }).await {
+            if let Err(e) = db::permissions::grant(
+                pool,
+                &GrantPermission {
+                    agent_id: agent.id.clone(),
+                    scope_type: "global".into(),
+                    scope_id: None,
+                    permission_type: perm.clone(),
+                    granted_by_type: "agent".into(),
+                    granted_by_id: creator_agent_id.into(),
+                },
+            )
+            .await
+            {
                 // Best-effort cleanup: delete relationship and agent
                 sqlx::query("DELETE FROM agent_relationships WHERE child_agent_id = ?")
                     .bind(&agent.id)
@@ -68,14 +78,18 @@ impl AgentLifecycle {
         let agent = db::agents::create(pool, input).await?;
 
         for perm in permissions {
-            db::permissions::grant(pool, &GrantPermission {
-                agent_id: agent.id.clone(),
-                scope_type: "global".into(),
-                scope_id: None,
-                permission_type: perm.clone(),
-                granted_by_type: "user".into(),
-                granted_by_id: user_id.into(),
-            }).await?;
+            db::permissions::grant(
+                pool,
+                &GrantPermission {
+                    agent_id: agent.id.clone(),
+                    scope_type: "global".into(),
+                    scope_id: None,
+                    permission_type: perm.clone(),
+                    granted_by_type: "user".into(),
+                    granted_by_id: user_id.into(),
+                },
+            )
+            .await?;
         }
 
         Ok(agent)
@@ -86,7 +100,6 @@ impl AgentLifecycle {
 mod tests {
     use super::*;
     use crate::db;
-    use crate::db::permissions::GrantPermission;
 
     #[tokio::test]
     async fn test_create_agent_by_user() {
@@ -99,14 +112,24 @@ mod tests {
                 name: "Manager".into(),
                 runtime_type: "claude_cli".into(),
                 provider: "anthropic".into(),
-                model_name: None, persona: None, config: None,
+                model_name: None,
+                persona: None,
+                config: None,
                 created_by_type: "user".into(),
                 created_by_id: "user-1".into(),
             },
-            &["create_agent".into(), "execute_cli".into(), "create_session".into()],
-        ).await.unwrap();
+            &[
+                "create_agent".into(),
+                "execute_cli".into(),
+                "create_session".into(),
+            ],
+        )
+        .await
+        .unwrap();
 
-        let perms = db::permissions::list_for_agent(&pool, &agent.id).await.unwrap();
+        let perms = db::permissions::list_for_agent(&pool, &agent.id)
+            .await
+            .unwrap();
         assert_eq!(perms.len(), 3);
     }
 
@@ -116,17 +139,22 @@ mod tests {
 
         // Create parent agent with permissions
         let parent = AgentLifecycle::create_agent_by_user(
-            &pool, "user-1",
+            &pool,
+            "user-1",
             &CreateAgent {
                 name: "Parent".into(),
                 runtime_type: "claude_cli".into(),
                 provider: "anthropic".into(),
-                model_name: None, persona: None, config: None,
+                model_name: None,
+                persona: None,
+                config: None,
                 created_by_type: "user".into(),
                 created_by_id: "user-1".into(),
             },
             &["create_agent".into(), "execute_cli".into()],
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // Parent creates child with subset of permissions
         let child = AgentLifecycle::create_agent_by_agent(
@@ -136,15 +164,21 @@ mod tests {
                 name: "Child".into(),
                 runtime_type: "codex_cli".into(),
                 provider: "openai".into(),
-                model_name: None, persona: None, config: None,
+                model_name: None,
+                persona: None,
+                config: None,
                 created_by_type: "agent".into(),
                 created_by_id: parent.id.clone(),
             },
             &["execute_cli".into()],
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         assert_eq!(child.name, "Child");
-        let perms = db::permissions::list_for_agent(&pool, &child.id).await.unwrap();
+        let perms = db::permissions::list_for_agent(&pool, &child.id)
+            .await
+            .unwrap();
         assert_eq!(perms.len(), 1);
     }
 
@@ -153,14 +187,21 @@ mod tests {
         let pool = db::create_test_pool().await;
 
         // Create agent WITHOUT create_agent permission
-        let agent = db::agents::create(&pool, &CreateAgent {
-            name: "NoPerms".into(),
-            runtime_type: "claude_cli".into(),
-            provider: "anthropic".into(),
-            model_name: None, persona: None, config: None,
-            created_by_type: "user".into(),
-            created_by_id: "user-1".into(),
-        }).await.unwrap();
+        let agent = db::agents::create(
+            &pool,
+            &CreateAgent {
+                name: "NoPerms".into(),
+                runtime_type: "claude_cli".into(),
+                provider: "anthropic".into(),
+                model_name: None,
+                persona: None,
+                config: None,
+                created_by_type: "user".into(),
+                created_by_id: "user-1".into(),
+            },
+        )
+        .await
+        .unwrap();
 
         let result = AgentLifecycle::create_agent_by_agent(
             &pool,
@@ -169,12 +210,15 @@ mod tests {
                 name: "Child".into(),
                 runtime_type: "codex_cli".into(),
                 provider: "openai".into(),
-                model_name: None, persona: None, config: None,
+                model_name: None,
+                persona: None,
+                config: None,
                 created_by_type: "agent".into(),
                 created_by_id: agent.id.clone(),
             },
             &["execute_cli".into()],
-        ).await;
+        )
+        .await;
 
         assert!(result.is_err());
     }

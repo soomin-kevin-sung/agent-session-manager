@@ -56,11 +56,19 @@ impl ProcessRegistry {
     }
 
     pub async fn get_status(&self, run_id: &str) -> Option<RunStatus> {
-        self.handles.read().await.get(run_id).map(|h| h.status.clone())
+        self.handles
+            .read()
+            .await
+            .get(run_id)
+            .map(|h| h.status.clone())
     }
 
     pub async fn get_agent_id(&self, run_id: &str) -> Option<String> {
-        self.handles.read().await.get(run_id).map(|h| h.agent_id.clone())
+        self.handles
+            .read()
+            .await
+            .get(run_id)
+            .map(|h| h.agent_id.clone())
     }
 
     pub async fn active_count(&self) -> usize {
@@ -90,12 +98,17 @@ mod tests {
     #[tokio::test]
     async fn test_registry_state_transitions() {
         let registry = ProcessRegistry::new();
-        registry.insert("r1".into(), RunHandle {
-            run_id: "r1".into(),
-            agent_id: "a1".into(),
-            status: RunStatus::Running,
-            kill_tx: None,
-        }).await;
+        registry
+            .insert(
+                "r1".into(),
+                RunHandle {
+                    run_id: "r1".into(),
+                    agent_id: "a1".into(),
+                    status: RunStatus::Running,
+                    kill_tx: None,
+                },
+            )
+            .await;
 
         // Valid: Running -> Cancelling
         assert!(registry.transition("r1", RunStatus::Cancelling).await);

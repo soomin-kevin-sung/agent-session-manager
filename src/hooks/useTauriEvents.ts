@@ -53,9 +53,6 @@ export function useTauriEvents() {
       } catch {
         // Tauri runtime not available (e.g. running in browser dev mode).
         // Silently ignore so the app still renders.
-        console.warn(
-          "Tauri event listeners could not be registered. Running outside Tauri?",
-        );
       }
     };
 

@@ -1,6 +1,6 @@
+use crate::AppResult;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::AppResult;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum RuntimeKind {
@@ -28,28 +28,64 @@ pub struct TokenUsage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "event_type")]
 pub enum RuntimeEvent {
-    SessionStarted { session_id: String },
+    SessionStarted {
+        session_id: String,
+    },
     TurnStarted,
-    TurnCompleted { usage: Option<TokenUsage> },
-    TurnFailed { message: String },
+    TurnCompleted {
+        usage: Option<TokenUsage>,
+    },
+    TurnFailed {
+        message: String,
+    },
 
-    Message { role: String, content: String },
+    Message {
+        role: String,
+        content: String,
+    },
 
-    CommandStarted { command: String },
-    CommandOutput { command: String, output: String },
-    CommandCompleted { command: String, exit_code: Option<i32> },
+    CommandStarted {
+        command: String,
+    },
+    CommandOutput {
+        command: String,
+        output: String,
+    },
+    CommandCompleted {
+        command: String,
+        exit_code: Option<i32>,
+    },
 
-    ToolCall { tool: String, args: Value },
-    ToolResult { tool: String, output: Value, status: String },
+    ToolCall {
+        tool: String,
+        args: Value,
+    },
+    ToolResult {
+        tool: String,
+        output: Value,
+        status: String,
+    },
 
-    Usage { usage: TokenUsage },
-    Cost { usd: f64 },
+    Usage {
+        usage: TokenUsage,
+    },
+    Cost {
+        usd: f64,
+    },
 
-    Error { message: String },
-    RawLog { stream: String, line: String },
+    Error {
+        message: String,
+    },
+    RawLog {
+        stream: String,
+        line: String,
+    },
 
     /// Emitted by process manager when child exits
-    ProcessExited { exit_code: Option<i32>, was_cancelling: bool },
+    ProcessExited {
+        exit_code: Option<i32>,
+        was_cancelling: bool,
+    },
 }
 
 /// Specification for spawning a CLI process.

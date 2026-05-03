@@ -120,10 +120,42 @@ export interface StartRunInput {
   extra_args?: string[];
 }
 
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+export interface TokenUsage {
+  input_tokens: number;
+  cached_input_tokens: number;
+  output_tokens: number;
+  reasoning_output_tokens: number;
+}
+
+export type RuntimeEvent =
+  | { event_type: "SessionStarted"; session_id: string }
+  | { event_type: "TurnStarted" }
+  | { event_type: "TurnCompleted"; usage: TokenUsage | null }
+  | { event_type: "TurnFailed"; message: string }
+  | { event_type: "Message"; role: string; content: string }
+  | { event_type: "CommandStarted"; command: string }
+  | { event_type: "CommandOutput"; command: string; output: string }
+  | { event_type: "CommandCompleted"; command: string; exit_code: number | null }
+  | { event_type: "ToolCall"; tool: string; args: JsonValue }
+  | { event_type: "ToolResult"; tool: string; output: JsonValue; status: string }
+  | { event_type: "Usage"; usage: TokenUsage }
+  | { event_type: "Cost"; usd: number }
+  | { event_type: "Error"; message: string }
+  | { event_type: "RawLog"; stream: string; line: string }
+  | { event_type: "ProcessExited"; exit_code: number | null; was_cancelling: boolean };
+
 export interface AgentOutputPayload {
   run_id: string;
   agent_id: string;
-  event: Record<string, unknown>;
+  event: RuntimeEvent;
 }
 
 export interface RunLifecyclePayload {

@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::AppResult;
 use super::DbPool;
+use crate::AppResult;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct User {
@@ -19,14 +19,12 @@ pub struct CreateUser {
 
 pub async fn create(pool: &DbPool, input: &CreateUser) -> AppResult<User> {
     let id = uuid::Uuid::new_v4().to_string();
-    sqlx::query_as::<_, User>(
-        "INSERT INTO users (id, display_name) VALUES (?, ?) RETURNING *"
-    )
-    .bind(&id)
-    .bind(&input.display_name)
-    .fetch_one(pool)
-    .await
-    .map_err(Into::into)
+    sqlx::query_as::<_, User>("INSERT INTO users (id, display_name) VALUES (?, ?) RETURNING *")
+        .bind(&id)
+        .bind(&input.display_name)
+        .fetch_one(pool)
+        .await
+        .map_err(Into::into)
 }
 
 pub async fn get_by_id(pool: &DbPool, id: &str) -> AppResult<User> {
@@ -71,9 +69,14 @@ mod tests {
     async fn test_create_and_get_user() {
         let pool = db::create_test_pool().await;
 
-        let user = create(&pool, &CreateUser {
-            display_name: "Test User".into(),
-        }).await.unwrap();
+        let user = create(
+            &pool,
+            &CreateUser {
+                display_name: "Test User".into(),
+            },
+        )
+        .await
+        .unwrap();
 
         assert_eq!(user.display_name, "Test User");
         assert!(!user.id.is_empty());
@@ -87,8 +90,22 @@ mod tests {
     async fn test_list_users() {
         let pool = db::create_test_pool().await;
 
-        create(&pool, &CreateUser { display_name: "Alice".into() }).await.unwrap();
-        create(&pool, &CreateUser { display_name: "Bob".into() }).await.unwrap();
+        create(
+            &pool,
+            &CreateUser {
+                display_name: "Alice".into(),
+            },
+        )
+        .await
+        .unwrap();
+        create(
+            &pool,
+            &CreateUser {
+                display_name: "Bob".into(),
+            },
+        )
+        .await
+        .unwrap();
 
         let users = list(&pool).await.unwrap();
         assert_eq!(users.len(), 2);
@@ -98,7 +115,14 @@ mod tests {
     async fn test_delete_user() {
         let pool = db::create_test_pool().await;
 
-        let user = create(&pool, &CreateUser { display_name: "ToDelete".into() }).await.unwrap();
+        let user = create(
+            &pool,
+            &CreateUser {
+                display_name: "ToDelete".into(),
+            },
+        )
+        .await
+        .unwrap();
         delete(&pool, &user.id).await.unwrap();
 
         let result = get_by_id(&pool, &user.id).await;

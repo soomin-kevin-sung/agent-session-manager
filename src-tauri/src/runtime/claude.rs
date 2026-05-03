@@ -1,5 +1,5 @@
-use crate::AppResult;
 use super::adapter::*;
+use crate::AppResult;
 
 pub struct ClaudeRuntime {
     pub cli_path: String,
@@ -78,7 +78,9 @@ impl AgentRuntime for ClaudeRuntime {
         match event_type {
             "system" => {
                 if let Some(sid) = parsed.get("session_id").and_then(|v| v.as_str()) {
-                    vec![RuntimeEvent::SessionStarted { session_id: sid.into() }]
+                    vec![RuntimeEvent::SessionStarted {
+                        session_id: sid.into(),
+                    }]
                 } else {
                     vec![]
                 }
@@ -86,7 +88,10 @@ impl AgentRuntime for ClaudeRuntime {
             "assistant" => {
                 let mut events = vec![];
 
-                if let Some(arr) = parsed.pointer("/message/content").and_then(|c| c.as_array()) {
+                if let Some(arr) = parsed
+                    .pointer("/message/content")
+                    .and_then(|c| c.as_array())
+                {
                     for block in arr {
                         let block_type = block.get("type").and_then(|t| t.as_str()).unwrap_or("");
                         match block_type {
@@ -101,8 +106,14 @@ impl AgentRuntime for ClaudeRuntime {
                                 }
                             }
                             "tool_use" => {
-                                let tool = block.get("name").and_then(|n| n.as_str()).unwrap_or("unknown");
-                                let args = block.get("input").cloned().unwrap_or(serde_json::Value::Null);
+                                let tool = block
+                                    .get("name")
+                                    .and_then(|n| n.as_str())
+                                    .unwrap_or("unknown");
+                                let args = block
+                                    .get("input")
+                                    .cloned()
+                                    .unwrap_or(serde_json::Value::Null);
                                 events.push(RuntimeEvent::ToolCall {
                                     tool: tool.into(),
                                     args,
@@ -149,7 +160,9 @@ mod tests {
     #[test]
     fn test_build_command_basic() {
         let rt = ClaudeRuntime::new(None);
-        let spec = rt.build_command("hello", Some("/tmp"), None, None, None).unwrap();
+        let spec = rt
+            .build_command("hello", Some("/tmp"), None, None, None)
+            .unwrap();
         assert_eq!(spec.program, "claude");
         assert!(spec.args.contains(&"-p".into()));
         assert!(spec.args.contains(&"stream-json".into()));
@@ -161,7 +174,9 @@ mod tests {
     fn test_build_command_with_options() {
         let rt = ClaudeRuntime::new(Some("/usr/bin/claude".into()));
         let tools = vec!["Bash".into(), "Read".into()];
-        let spec = rt.build_command("test", None, Some(5), Some(&tools), None).unwrap();
+        let spec = rt
+            .build_command("test", None, Some(5), Some(&tools), None)
+            .unwrap();
         assert_eq!(spec.program, "/usr/bin/claude");
         assert!(spec.args.contains(&"5".into()));
         assert!(spec.args.contains(&"Bash,Read".into()));
@@ -171,7 +186,7 @@ mod tests {
     fn test_parse_assistant_text() {
         let rt = ClaudeRuntime::new(None);
         let events = rt.parse_output_line(
-            r#"{"type":"assistant","message":{"content":[{"type":"text","text":"Hello"}]}}"#
+            r#"{"type":"assistant","message":{"content":[{"type":"text","text":"Hello"}]}}"#,
         );
         assert_eq!(events.len(), 1);
         assert!(matches!(&events[0], RuntimeEvent::Message { content, .. } if content == "Hello"));
@@ -190,11 +205,14 @@ mod tests {
     #[test]
     fn test_parse_result() {
         let rt = ClaudeRuntime::new(None);
-        let events = rt.parse_output_line(
-            r#"{"type":"result","result":"Done","total_cost_usd":0.05}"#
-        );
-        assert!(events.iter().any(|e| matches!(e, RuntimeEvent::Cost { usd } if (*usd - 0.05).abs() < f64::EPSILON)));
-        assert!(events.iter().any(|e| matches!(e, RuntimeEvent::TurnCompleted { .. })));
+        let events =
+            rt.parse_output_line(r#"{"type":"result","result":"Done","total_cost_usd":0.05}"#);
+        assert!(events.iter().any(
+            |e| matches!(e, RuntimeEvent::Cost { usd } if (*usd - 0.05).abs() < f64::EPSILON)
+        ));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, RuntimeEvent::TurnCompleted { .. })));
     }
 
     #[test]

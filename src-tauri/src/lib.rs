@@ -1,18 +1,18 @@
-mod errors;
-mod db;
-mod config;
 mod app_state;
 mod commands;
-mod runtime;
-mod process;
+mod config;
+mod db;
+mod errors;
 mod events;
-mod security;
 mod orchestrator;
+mod process;
+mod runtime;
+mod security;
 
-pub use errors::{AppError, AppResult, IpcError};
-pub use db::DbPool;
 pub use app_state::AppState;
 pub use config::AppSettings;
+pub use db::DbPool;
+pub use errors::{AppError, AppResult, IpcError};
 
 use tauri::Manager;
 
@@ -51,9 +51,14 @@ pub fn run() {
                 // Create default user if none exists
                 let users = db::users::list(&pool).await.unwrap_or_default();
                 let _default_user_id = if users.is_empty() {
-                    match db::users::create(&pool, &db::users::CreateUser {
-                        display_name: "User".into(),
-                    }).await {
+                    match db::users::create(
+                        &pool,
+                        &db::users::CreateUser {
+                            display_name: "User".into(),
+                        },
+                    )
+                    .await
+                    {
                         Ok(user) => user.id,
                         Err(e) => {
                             log::error!("Failed to create default user: {}", e);

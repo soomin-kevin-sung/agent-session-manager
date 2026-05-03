@@ -1,7 +1,7 @@
-use tauri::State;
-use crate::{AppState, AppError};
 use crate::db::agents::{self, Agent, UpdateAgent};
 use crate::orchestrator::agent_lifecycle::AgentLifecycle;
+use crate::{AppError, AppState};
+use tauri::State;
 
 #[derive(serde::Deserialize)]
 pub struct CreateAgentWithPermissions {
@@ -15,12 +15,18 @@ pub struct CreateAgentWithPermissions {
 }
 
 #[tauri::command]
-pub async fn create_agent(state: State<'_, AppState>, input: CreateAgentWithPermissions) -> Result<Agent, AppError> {
+pub async fn create_agent(
+    state: State<'_, AppState>,
+    input: CreateAgentWithPermissions,
+) -> Result<Agent, AppError> {
     // Get default user id
     let users = crate::db::users::list(&state.db).await?;
-    let user_id = users.first()
+    let user_id = users
+        .first()
         .map(|u| u.id.clone())
-        .ok_or_else(|| AppError::Internal { message: "No user found".into() })?;
+        .ok_or_else(|| AppError::Internal {
+            message: "No user found".into(),
+        })?;
 
     AgentLifecycle::create_agent_by_user(
         &state.db,
@@ -36,7 +42,8 @@ pub async fn create_agent(state: State<'_, AppState>, input: CreateAgentWithPerm
             created_by_id: user_id.clone(),
         },
         &input.permissions,
-    ).await
+    )
+    .await
 }
 
 // Read operations can stay as direct DB calls
@@ -51,7 +58,11 @@ pub async fn list_agents(state: State<'_, AppState>) -> Result<Vec<Agent>, AppEr
 }
 
 #[tauri::command]
-pub async fn update_agent(state: State<'_, AppState>, id: String, input: UpdateAgent) -> Result<Agent, AppError> {
+pub async fn update_agent(
+    state: State<'_, AppState>,
+    id: String,
+    input: UpdateAgent,
+) -> Result<Agent, AppError> {
     agents::update(&state.db, &id, &input).await
 }
 

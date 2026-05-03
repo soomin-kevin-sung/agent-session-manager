@@ -1,5 +1,5 @@
-use crate::AppResult;
 use super::DbPool;
+use crate::AppResult;
 
 pub async fn run_migrations(pool: &DbPool) -> AppResult<()> {
     let sql = include_str!("../../migrations/001_init.sql");
