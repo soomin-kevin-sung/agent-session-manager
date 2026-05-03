@@ -181,14 +181,17 @@ export function OnboardingPage() {
         }
         ctx.stroke();
 
-        // Command dot (from → to) and report dot (to → from)
-        const dots: Array<{ t: number; color: string; targetNode: typeof fromNode }> = [
-          { t: progress, color: toNode.color, targetNode: toNode },
-          { t: 1 - reportProgress, color: fromNode.color, targetNode: fromNode },
+        // Command dot (from → to, t goes 0→1) and report dot (to → from, t goes 1→0)
+        const dots: Array<{ t: number; color: string; targetNode: typeof fromNode; reverse: boolean }> = [
+          { t: progress, color: toNode.color, targetNode: toNode, reverse: false },
+          { t: 1 - reportProgress, color: fromNode.color, targetNode: fromNode, reverse: true },
         ];
         for (const dot of dots) {
           const point = pointOnCurve(from, control, to, dot.t);
-          const arrival = dot.t > 0.93 ? (dot.t - 0.93) / 0.07 : 0;
+          // Forward dots arrive at t≈1 (near "to"), reverse dots arrive at t≈0 (near "from")
+          const arrival = dot.reverse
+            ? (dot.t < 0.07 ? (0.07 - dot.t) / 0.07 : 0)
+            : (dot.t > 0.93 ? (dot.t - 0.93) / 0.07 : 0);
           ctx.fillStyle = dot.color;
           ctx.shadowColor = dot.color;
           ctx.shadowBlur = 20;
