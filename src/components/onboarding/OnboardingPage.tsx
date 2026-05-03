@@ -205,8 +205,14 @@ export function OnboardingPage() {
           node.py,
           node.radius
         );
-        gradient.addColorStop(0, "rgba(255,255,255,0.14)");
-        gradient.addColorStop(1, "#18181b");
+        // Solid opaque background so lines/signals don't bleed through
+        ctx.fillStyle = "#09090b";
+        ctx.beginPath();
+        ctx.arc(node.px, node.py, node.radius + 1, 0, Math.PI * 2);
+        ctx.fill();
+
+        gradient.addColorStop(0, "#2a2a30");
+        gradient.addColorStop(1, "#111113");
 
         ctx.shadowColor = node.color;
         ctx.shadowBlur = 18;
