@@ -97,7 +97,7 @@ export function MemberPanel() {
         </h3>
         <button
           onClick={() => setAgentCreationModal(true)}
-          className="text-zinc-400 hover:text-zinc-200"
+          className="rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
           aria-label={t("agent.create")}
         >
           <Plus className="size-4" />
@@ -198,7 +198,7 @@ function AgentCard({
       {/* Explicit DM button — visible on hover, keyboard accessible */}
       <button
         onClick={onOpenDm}
-        className="shrink-0 rounded p-1 text-zinc-500 opacity-0 transition-opacity hover:bg-zinc-700 hover:text-zinc-200 focus:opacity-100 group-hover:opacity-100"
+        className="shrink-0 rounded p-1 text-zinc-500 opacity-0 transition-opacity hover:bg-zinc-800 hover:text-zinc-200 focus:opacity-100 group-hover:opacity-100"
         aria-label={t("dm.openDm", { name })}
         title={t("dm.openDm", { name })}
       >

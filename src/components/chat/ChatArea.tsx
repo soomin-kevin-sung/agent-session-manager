@@ -11,14 +11,14 @@ export function ChatArea() {
 
   if (!activeChannelId || !activeChannel) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-zinc-900">
+      <div className="flex flex-1 items-center justify-center bg-zinc-950">
         <p className="text-zinc-500">{t("channel.noChannel")}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-zinc-900">
+    <div className="flex flex-1 flex-col bg-zinc-950">
       <ChannelHeader channel={activeChannel} />
       <MessageList channelId={activeChannelId} />
       <MessageInput channelId={activeChannelId} />

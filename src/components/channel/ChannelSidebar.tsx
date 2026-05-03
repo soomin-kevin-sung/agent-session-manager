@@ -99,7 +99,7 @@ export function ChannelSidebar() {
               </CollapsibleTrigger>
               <button
                 onClick={() => setSessionCreationModal(true)}
-                className="text-zinc-400 hover:text-zinc-200"
+                className="rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                 aria-label={t("session.create")}
               >
                 <Plus className="size-4" />

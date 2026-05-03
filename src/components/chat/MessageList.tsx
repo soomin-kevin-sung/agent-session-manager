@@ -26,7 +26,7 @@ export function MessageList({ channelId }: MessageListProps) {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <div className="size-6 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-300" />
+        <div className="size-6 animate-spin rounded-full border-2 border-zinc-800 border-t-emerald-400" />
       </div>
     );
   }

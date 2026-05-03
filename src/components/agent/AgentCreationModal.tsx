@@ -191,7 +191,7 @@ export function AgentCreationModal() {
               id="agent-model"
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus-visible:border-zinc-600 focus-visible:ring-1 focus-visible:ring-sky-500/40"
             >
               {models.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -281,7 +281,7 @@ export function AgentCreationModal() {
                     type="checkbox"
                     checked={permissions.includes(perm.key)}
                     onChange={() => togglePermission(perm.key)}
-                    className="rounded"
+                    className="rounded accent-emerald-500"
                   />
                   {t(perm.labelKey)}
                 </label>

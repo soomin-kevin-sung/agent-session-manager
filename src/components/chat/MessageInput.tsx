@@ -40,7 +40,7 @@ export function MessageInput({ channelId }: MessageInputProps) {
     <div className="shrink-0 border-t border-zinc-800 p-4">
       <div
         className={`flex items-end gap-2 rounded-lg px-3 py-2 ${
-          error ? "bg-red-900/30 ring-1 ring-red-500/50" : "bg-zinc-800"
+          error ? "bg-rose-950/30 ring-1 ring-rose-500/50" : "bg-zinc-800"
         }`}
       >
         <Textarea

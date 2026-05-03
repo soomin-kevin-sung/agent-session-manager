@@ -69,11 +69,11 @@ export function WorkspaceSidebar() {
           );
         })}
 
-        <Separator className="mx-auto w-8 bg-zinc-700" />
+        <Separator className="mx-auto w-8 bg-zinc-800" />
 
         <Tooltip>
           <TooltipTrigger
-            className="flex size-10 items-center justify-center rounded-full bg-zinc-800 text-emerald-400 transition-all hover:rounded-2xl hover:bg-emerald-600 hover:text-white"
+            className="flex size-10 items-center justify-center rounded-full bg-zinc-800 text-emerald-400 transition-all hover:rounded-2xl hover:bg-zinc-800 hover:text-emerald-300"
             onClick={() => setWorkspaceCreationModal(true)}
             aria-label={t("workspace.add")}
           >
@@ -88,7 +88,7 @@ export function WorkspaceSidebar() {
 
         <Tooltip>
           <TooltipTrigger
-            className="flex size-10 items-center justify-center rounded-full text-zinc-400 transition-colors hover:text-zinc-100"
+            className="flex size-10 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
             aria-label={t("common.settings")}
           >
             <Settings className="size-5" />

@@ -123,7 +123,7 @@ export function SessionCreationModal() {
                       type="checkbox"
                       checked={selectedAgentIds.includes(agent.id)}
                       onChange={() => toggleAgent(agent.id)}
-                      className="rounded"
+                      className="rounded accent-emerald-500"
                     />
                     {agent.name}
                   </label>

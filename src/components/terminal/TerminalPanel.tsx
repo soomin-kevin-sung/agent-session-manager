@@ -102,7 +102,7 @@ export function TerminalPanel() {
               </div>
             ))
           ) : (
-            <p className="text-zinc-600">{t("terminal.noOutput")}</p>
+            <p className="text-zinc-500">{t("terminal.noOutput")}</p>
           )}
         </div>
       </ScrollArea>

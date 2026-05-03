@@ -26,7 +26,7 @@ export function WorkspaceCreationModal() {
 
   return (
     <Dialog open={show} onOpenChange={setShow}>
-      <DialogContent className="bg-zinc-900 border-zinc-700">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("workspace.create")}</DialogTitle>
         </DialogHeader>
@@ -37,7 +37,6 @@ export function WorkspaceCreationModal() {
               id="ws-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="bg-zinc-800 border-zinc-700"
               placeholder={t("workspace.name")}
             />
           </div>
@@ -47,7 +46,6 @@ export function WorkspaceCreationModal() {
               id="ws-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="bg-zinc-800 border-zinc-700"
               placeholder={t("workspace.description")}
               rows={3}
             />
