@@ -64,46 +64,71 @@ function pointOnCurve(
   };
 }
 
+// Anthropic Claude logo — sparkle/starburst mark
 function drawClaudeIcon(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number) {
   ctx.save();
+  const s = radius * 0.42;
+  ctx.translate(x, y);
   ctx.fillStyle = "#D4A574";
+
+  // Main 4-point starburst
   ctx.beginPath();
-  ctx.arc(x, y, radius * 0.48, 0, Math.PI * 2);
+  ctx.moveTo(0, -s);
+  ctx.bezierCurveTo(s * 0.15, -s * 0.15, s * 0.15, -s * 0.15, s, 0);
+  ctx.bezierCurveTo(s * 0.15, s * 0.15, s * 0.15, s * 0.15, 0, s);
+  ctx.bezierCurveTo(-s * 0.15, s * 0.15, -s * 0.15, s * 0.15, -s, 0);
+  ctx.bezierCurveTo(-s * 0.15, -s * 0.15, -s * 0.15, -s * 0.15, 0, -s);
   ctx.fill();
-  ctx.fillStyle = "#18181b";
-  ctx.font = `700 ${radius * 0.72}px Georgia, serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("C", x, y + radius * 0.02);
-  ctx.fillStyle = "rgba(255,255,255,0.72)";
-  for (let i = 0; i < 5; i += 1) {
-    const angle = i * 1.25;
-    ctx.beginPath();
-    ctx.arc(x + Math.cos(angle) * radius * 0.7, y + Math.sin(angle) * radius * 0.7, 1.6, 0, Math.PI * 2);
-    ctx.fill();
-  }
+
+  // Diagonal 4-point starburst (rotated 45°)
+  const s2 = s * 0.62;
+  ctx.beginPath();
+  const d = Math.SQRT1_2;
+  ctx.moveTo(-d * s2, -d * s2);
+  ctx.bezierCurveTo(-s2 * 0.08, -s2 * 0.08, -s2 * 0.08, -s2 * 0.08, d * s2, -d * s2);
+  ctx.bezierCurveTo(s2 * 0.08, -s2 * 0.08, s2 * 0.08, -s2 * 0.08, d * s2, d * s2);
+  ctx.bezierCurveTo(s2 * 0.08, s2 * 0.08, s2 * 0.08, s2 * 0.08, -d * s2, d * s2);
+  ctx.bezierCurveTo(-s2 * 0.08, s2 * 0.08, -s2 * 0.08, s2 * 0.08, -d * s2, -d * s2);
+  ctx.fill();
+
   ctx.restore();
 }
 
+// OpenAI / Codex logo — hexagonal flower knot
 function drawCodexIcon(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number) {
   ctx.save();
-  ctx.strokeStyle = "rgba(255,255,255,0.78)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  for (let i = 0; i < 6; i += 1) {
-    const angle = Math.PI / 6 + (Math.PI * 2 * i) / 6;
-    const px = x + Math.cos(angle) * radius * 0.56;
-    const py = y + Math.sin(angle) * radius * 0.56;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
+  ctx.translate(x, y);
+  const s = radius * 0.4;
+  ctx.strokeStyle = "rgba(255,255,255,0.85)";
+  ctx.lineWidth = s * 0.14;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  // Draw 5 interlocking arcs forming the OpenAI knot pattern
+  for (let i = 0; i < 5; i++) {
+    const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+    const nextAngle = ((i + 1) / 5) * Math.PI * 2 - Math.PI / 2;
+
+    const x1 = Math.cos(angle) * s;
+    const y1 = Math.sin(angle) * s;
+    const x2 = Math.cos(nextAngle) * s;
+    const y2 = Math.sin(nextAngle) * s;
+
+    // Outer petal arc
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    const cx1 = Math.cos(angle + 0.3) * s * 1.6;
+    const cy1 = Math.sin(angle + 0.3) * s * 1.6;
+    ctx.quadraticCurveTo(cx1, cy1, x2, y2);
+    ctx.stroke();
+
+    // Inner spoke to center
+    ctx.beginPath();
+    ctx.moveTo(x1 * 0.3, y1 * 0.3);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
   }
-  ctx.closePath();
-  ctx.stroke();
-  ctx.fillStyle = "#fafafa";
-  ctx.font = `700 ${radius * 0.62}px "Geist Mono", Consolas, monospace`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("X", x, y + 1);
+
   ctx.restore();
 }
 
