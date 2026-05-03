@@ -18,19 +18,34 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   activeRuns: new Map(),
 
   fetchAgents: async () => {
-    const agents = await api.agents.list();
-    set({ agents });
+    try {
+      const agents = await api.agents.list();
+      set({ agents });
+    } catch (error) {
+      console.error("Failed to fetch agents", error);
+      set({ agents: [] });
+    }
   },
 
   createAgent: async (input) => {
-    const agent = await api.agents.create(input);
-    await get().fetchAgents();
-    return agent;
+    try {
+      const agent = await api.agents.create(input);
+      await get().fetchAgents();
+      return agent;
+    } catch (error) {
+      console.error("Failed to create agent", error);
+      throw error;
+    }
   },
 
   deleteAgent: async (id) => {
-    await api.agents.delete(id);
-    await get().fetchAgents();
+    try {
+      await api.agents.delete(id);
+      await get().fetchAgents();
+    } catch (error) {
+      console.error("Failed to delete agent", error);
+      throw error;
+    }
   },
 
   setRunActive: (agentId, runId) => {

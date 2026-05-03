@@ -20,18 +20,27 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     set((state) => ({
       loadingChannels: new Set(state.loadingChannels).add(channelId),
     }));
-    const messages = await api.messages.list(channelId, 100);
-    set((state) => {
-      const loading = new Set(state.loadingChannels);
-      loading.delete(channelId);
-      return {
-        messagesByChannel: {
-          ...state.messagesByChannel,
-          [channelId]: messages.reverse(),
-        },
-        loadingChannels: loading,
-      };
-    });
+    try {
+      const messages = await api.messages.list(channelId, 100);
+      set((state) => {
+        const loading = new Set(state.loadingChannels);
+        loading.delete(channelId);
+        return {
+          messagesByChannel: {
+            ...state.messagesByChannel,
+            [channelId]: messages.reverse(),
+          },
+          loadingChannels: loading,
+        };
+      });
+    } catch (error) {
+      console.error("Failed to fetch messages", error);
+      set((state) => {
+        const loading = new Set(state.loadingChannels);
+        loading.delete(channelId);
+        return { loadingChannels: loading };
+      });
+    }
   },
 
   addMessage: (channelId, message) => {
@@ -44,13 +53,18 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   },
 
   sendMessage: async (channelId, content) => {
-    const msg = await api.messages.send({
-      channel_id: channelId,
-      sender_type: "user",
-      content,
-      message_type: "chat",
-    });
-    get().addMessage(channelId, msg);
+    try {
+      const msg = await api.messages.send({
+        channel_id: channelId,
+        sender_type: "user",
+        content,
+        message_type: "chat",
+      });
+      get().addMessage(channelId, msg);
+    } catch (error) {
+      console.error("Failed to send message", error);
+      throw error;
+    }
   },
 
   getMessages: (channelId) => get().messagesByChannel[channelId] ?? [],
