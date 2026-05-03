@@ -50,7 +50,7 @@ pub fn run() {
 
                 // Create default user if none exists
                 let users = db::users::list(&pool).await.unwrap_or_default();
-                let default_user_id = if users.is_empty() {
+                let _default_user_id = if users.is_empty() {
                     match db::users::create(&pool, &db::users::CreateUser {
                         display_name: "User".into(),
                     }).await {
@@ -63,19 +63,6 @@ pub fn run() {
                 } else {
                     users[0].id.clone()
                 };
-
-                // Create default workspace if none exists
-                let workspaces = db::workspaces::list(&pool).await.unwrap_or_default();
-                if workspaces.is_empty() && !default_user_id.is_empty() {
-                    if let Err(e) = db::workspaces::create(&pool, &db::workspaces::CreateWorkspace {
-                        name: "Default".into(),
-                        description: Some("Default workspace".into()),
-                        created_by_type: "user".into(),
-                        created_by_id: default_user_id.clone(),
-                    }).await {
-                        log::error!("Failed to create default workspace: {}", e);
-                    }
-                }
 
                 let process_manager = process::ProcessManager::new();
                 let runtime_registry = runtime::registry::RuntimeRegistry::new(

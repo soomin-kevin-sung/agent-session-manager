@@ -6,7 +6,11 @@
     "create": "Create Workspace",
     "name": "Workspace Name",
     "description": "Description",
-    "add": "Add Workspace"
+    "add": "Add Workspace",
+    "firstCreate": "Create your first workspace",
+    "firstCreateDescription": "Create a workspace to collaborate with AI agents on your projects.",
+    "emptyState": "No workspaces yet",
+    "emptyStateDescription": "Create a workspace to start working with AI agents."
   },
   "channel": {
     "general": "General",

@@ -6,7 +6,11 @@
     "create": "워크스페이스 생성",
     "name": "워크스페이스 이름",
     "description": "설명",
-    "add": "워크스페이스 추가"
+    "add": "워크스페이스 추가",
+    "firstCreate": "첫 워크스페이스 만들기",
+    "firstCreateDescription": "프로젝트나 팀 단위로 AI 에이전트와 함께 작업할 공간을 만드세요.",
+    "emptyState": "워크스페이스가 없습니다",
+    "emptyStateDescription": "AI 에이전트와 함께 작업할 공간을 만들어보세요."
   },
   "channel": {
     "general": "일반",

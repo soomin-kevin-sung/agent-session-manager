@@ -5,6 +5,7 @@ import { MemberPanel } from "@/components/agent/MemberPanel";
 import { TerminalPanel } from "@/components/terminal/TerminalPanel";
 import { AgentCreationModal } from "@/components/agent/AgentCreationModal";
 import { WorkspaceCreationModal } from "@/components/workspace/WorkspaceCreationModal";
+import { EmptyWorkspaceState } from "@/components/workspace/EmptyWorkspaceState";
 import { SessionCreationModal } from "@/components/session/SessionCreationModal";
 import { useUIStore } from "@/stores/ui-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -15,6 +16,7 @@ import { useEffect } from "react";
 export function AppLayout() {
   const { showMemberPanel, showTerminalPanel } = useUIStore();
   const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
+  const workspaces = useWorkspaceStore((s) => s.workspaces);
   const fetchAgents = useAgentStore((s) => s.fetchAgents);
 
   useTauriEvents();
@@ -24,15 +26,23 @@ export function AppLayout() {
     fetchAgents();
   }, [fetchWorkspaces, fetchAgents]);
 
+  const hasWorkspaces = workspaces.length > 0;
+
   return (
     <div className="dark flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
-      <WorkspaceSidebar />
-      <ChannelSidebar />
-      <div className="flex flex-1 flex-col min-w-0">
-        <ChatArea />
-        {showTerminalPanel && <TerminalPanel />}
-      </div>
-      {showMemberPanel && <MemberPanel />}
+      {hasWorkspaces ? (
+        <>
+          <WorkspaceSidebar />
+          <ChannelSidebar />
+          <div className="flex flex-1 flex-col min-w-0">
+            <ChatArea />
+            {showTerminalPanel && <TerminalPanel />}
+          </div>
+          {showMemberPanel && <MemberPanel />}
+        </>
+      ) : (
+        <EmptyWorkspaceState />
+      )}
       <AgentCreationModal />
       <WorkspaceCreationModal />
       <SessionCreationModal />

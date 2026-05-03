@@ -12,6 +12,7 @@ export function WorkspaceCreationModal() {
   const show = useUIStore((s) => s.showWorkspaceCreationModal);
   const setShow = useUIStore((s) => s.setWorkspaceCreationModal);
   const createWorkspace = useWorkspaceStore((s) => s.createWorkspace);
+  const isFirstWorkspace = useWorkspaceStore((s) => s.workspaces.length === 0);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -49,7 +50,7 @@ export function WorkspaceCreationModal() {
     }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("workspace.create")}</DialogTitle>
+          <DialogTitle>{isFirstWorkspace ? t("workspace.firstCreate") : t("workspace.create")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>

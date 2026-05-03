@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api, type Workspace, type Channel } from "@/lib/tauri";
+import { useUIStore } from "@/stores/ui-store";
 
 interface WorkspaceState {
   workspaces: Workspace[];
@@ -25,6 +26,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({ workspaces });
     if (workspaces.length > 0 && !get().activeWorkspaceId) {
       await get().setActiveWorkspace(workspaces[0].id);
+    }
+    if (workspaces.length === 0) {
+      useUIStore.getState().setWorkspaceCreationModal(true);
     }
   },
 
