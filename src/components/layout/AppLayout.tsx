@@ -49,8 +49,14 @@ export function AppLayout() {
     };
   }, []);
 
+  const workspacesLoaded = useWorkspaceStore((s) => s.workspacesLoaded);
   const isHome = activeWorkspaceId === null;
-  const shouldShowOnboarding = !onboardingCompleted && workspaces.length === 0;
+  const shouldShowOnboarding = workspacesLoaded && !onboardingCompleted && workspaces.length === 0;
+
+  // Show nothing until workspaces are loaded to prevent onboarding flash
+  if (!workspacesLoaded) {
+    return <div className="dark h-screen w-screen bg-zinc-950" />;
+  }
 
   return (
     <div className="dark flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">

@@ -3,6 +3,7 @@ import { api, type Workspace, type Channel } from "@/lib/tauri";
 
 interface WorkspaceState {
   workspaces: Workspace[];
+  workspacesLoaded: boolean;
   activeWorkspaceId: string | null;
   channels: Channel[];
   activeChannelId: string | null;
@@ -17,6 +18,7 @@ interface WorkspaceState {
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   workspaces: [],
+  workspacesLoaded: false,
   activeWorkspaceId: null,
   channels: [],
   activeChannelId: null,
@@ -26,13 +28,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const currentActiveId = get().activeWorkspaceId;
 
     if (workspaces.length === 0) {
-      // Reset all state when no workspaces
-      set({ workspaces, activeWorkspaceId: null, activeChannelId: null, channels: [] });
+      set({ workspaces, workspacesLoaded: true, activeWorkspaceId: null, activeChannelId: null, channels: [] });
     } else {
-      set({ workspaces });
-      // If current active was set but no longer exists, switch to first
-      // If null (user is on Home), stay on Home
-      if (currentActiveId !== null) {
+      set({ workspaces, workspacesLoaded: true });
+      if (currentActiveId === null) {
+        // First load or returning to Home — auto-activate first workspace
+        await get().setActiveWorkspace(workspaces[0].id);
+      } else {
+        // If current active no longer exists, switch to first
         const activeExists = workspaces.some(w => w.id === currentActiveId);
         if (!activeExists) {
           await get().setActiveWorkspace(workspaces[0].id);

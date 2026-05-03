@@ -238,12 +238,19 @@ export function OnboardingPage() {
       }
     };
 
-    resize();
-    window.addEventListener("resize", resize);
-    animationFrame = requestAnimationFrame(draw);
+    const handleResize = () => {
+      resize();
+      if (reducedMotion) draw(0); // redraw static snapshot after resize
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    if (!reducedMotion) {
+      animationFrame = requestAnimationFrame(draw);
+    }
 
     return () => {
-      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrame);
     };
   }, []);
