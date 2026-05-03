@@ -37,8 +37,21 @@ export function SessionCreationModal() {
     );
   };
 
+  const resetForm = () => {
+    setName("");
+    setWorkDirectory("");
+    setSelectedAgentIds([]);
+    setSubmitting(false);
+  };
+
+  const handleClose = () => {
+    if (submitting) return;
+    resetForm();
+    setSessionCreationModal(false);
+  };
+
   const handleCreate = async () => {
-    if (!name.trim() || !activeWorkspaceId) return;
+    if (!name.trim() || !activeWorkspaceId || submitting) return;
     setSubmitting(true);
     try {
       const session = await api.sessions.create({
@@ -47,32 +60,25 @@ export function SessionCreationModal() {
         work_directory: workDirectory.trim() || ".",
         agent_ids: selectedAgentIds,
       });
-      // Refresh channels so the new group channel appears
       await setActiveWorkspace(activeWorkspaceId);
-      // Select the newly created channel
       if (session.channel_id) {
         setActiveChannel(session.channel_id);
         fetchMessages(session.channel_id);
       }
-      resetForm();
-      setSessionCreationModal(false);
+      if (useUIStore.getState().showSessionCreationModal) {
+        resetForm();
+        setSessionCreationModal(false);
+      }
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const resetForm = () => {
-    setName("");
-    setWorkDirectory("");
-    setSelectedAgentIds([]);
   };
 
   return (
     <Dialog
       open={showSessionCreationModal}
       onOpenChange={(open) => {
-        if (!open) resetForm();
-        setSessionCreationModal(open);
+        if (!open) handleClose();
       }}
     >
       <DialogContent className="sm:max-w-md">
@@ -139,7 +145,8 @@ export function SessionCreationModal() {
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => setSessionCreationModal(false)}
+            onClick={handleClose}
+            disabled={submitting}
           >
             {t("common.cancel")}
           </Button>

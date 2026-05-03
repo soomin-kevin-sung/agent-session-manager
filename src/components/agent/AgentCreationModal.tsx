@@ -87,8 +87,24 @@ export function AgentCreationModal() {
       : undefined;
   };
 
+  const resetForm = () => {
+    setName("");
+    setSelectedModel(ALL_MODELS[0].value);
+    setRole("");
+    setExpertise("");
+    setDescription("");
+    setPermissions(["execute_cli"]);
+    setSubmitting(false);
+  };
+
+  const handleClose = () => {
+    if (submitting) return; // prevent close during submission
+    resetForm();
+    setAgentCreationModal(false);
+  };
+
   const handleCreate = async () => {
-    if (!name.trim()) return;
+    if (!name.trim() || submitting) return;
     setSubmitting(true);
     try {
       const input: CreateAgentInput = {
@@ -100,28 +116,21 @@ export function AgentCreationModal() {
         permissions,
       };
       await createAgent(input);
-      resetForm();
-      setAgentCreationModal(false);
+      // Only close if modal is still open (prevents race with manual close)
+      if (useUIStore.getState().showAgentCreationModal) {
+        resetForm();
+        setAgentCreationModal(false);
+      }
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const resetForm = () => {
-    setName("");
-    setSelectedModel(ALL_MODELS[0].value);
-    setRole("");
-    setExpertise("");
-    setDescription("");
-    setPermissions(["execute_cli"]);
   };
 
   return (
     <Dialog
       open={showAgentCreationModal}
       onOpenChange={(open) => {
-        if (!open) resetForm();
-        setAgentCreationModal(open);
+        if (!open) handleClose();
       }}
     >
       <DialogContent className="sm:max-w-lg">
@@ -262,7 +271,8 @@ export function AgentCreationModal() {
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => setAgentCreationModal(false)}
+            onClick={handleClose}
+            disabled={submitting}
           >
             {t("common.cancel")}
           </Button>

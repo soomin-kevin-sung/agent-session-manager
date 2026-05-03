@@ -15,19 +15,37 @@ export function WorkspaceCreationModal() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleCreate = async () => {
-    if (!name.trim()) return;
-    await createWorkspace(name.trim(), description.trim() || undefined);
+  const resetForm = () => {
     setName("");
     setDescription("");
+    setSubmitting(false);
+  };
+
+  const handleClose = () => {
+    if (submitting) return;
+    resetForm();
     setShow(false);
+  };
+
+  const handleCreate = async () => {
+    if (!name.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await createWorkspace(name.trim(), description.trim() || undefined);
+      if (useUIStore.getState().showWorkspaceCreationModal) {
+        resetForm();
+        setShow(false);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <Dialog open={show} onOpenChange={(open) => {
-      if (!open) { setName(""); setDescription(""); }
-      setShow(open);
+      if (!open) handleClose();
     }}>
       <DialogContent>
         <DialogHeader>
@@ -55,8 +73,8 @@ export function WorkspaceCreationModal() {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setShow(false)}>{t("common.cancel")}</Button>
-          <Button onClick={handleCreate} disabled={!name.trim()}>{t("common.confirm")}</Button>
+          <Button variant="outline" onClick={handleClose} disabled={submitting}>{t("common.cancel")}</Button>
+          <Button onClick={handleCreate} disabled={!name.trim() || submitting}>{t("common.confirm")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
