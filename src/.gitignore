@@ -1,0 +1,3 @@
+# Frontend build output (handled by root dist/)
+# Local environment overrides
+*.local
