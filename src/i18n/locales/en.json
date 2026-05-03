@@ -18,11 +18,18 @@
   },
   "agent": {
     "create": "Create Agent",
+    "createDescription": "Create a new AI agent.",
     "name": "Name",
-    "role": "Role",
-    "runtime": "Runtime",
+    "namePlaceholder": "e.g. Frontend Developer",
+    "provider": "AI Provider",
     "model": "Model",
     "persona": "Persona",
+    "role": "Role",
+    "rolePlaceholder": "e.g. developer, code-reviewer",
+    "expertise": "Expertise",
+    "expertisePlaceholder": "e.g. React, TypeScript, Node.js",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the agent's personality or work style",
     "claude": "Claude",
     "codex": "Codex",
     "status": {
@@ -66,6 +73,13 @@
     "noAgentsToAdd": "Create an agent first",
     "doubleClickToOpen": "Double-click to open DM",
     "openDm": "Message {{name}}"
+  },
+  "permissions": {
+    "executeCli": "Execute CLI",
+    "createAgent": "Create Agent",
+    "createSession": "Create Session",
+    "assignTask": "Assign Task",
+    "review": "Code Review"
   },
   "terminal": {
     "title": "Terminal",

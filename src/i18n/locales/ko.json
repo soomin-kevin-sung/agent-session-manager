@@ -18,11 +18,18 @@
   },
   "agent": {
     "create": "에이전트 생성",
+    "createDescription": "새로운 AI 에이전트를 생성합니다.",
     "name": "이름",
-    "role": "역할",
-    "runtime": "런타임",
+    "namePlaceholder": "예: 프론트엔드 개발자",
+    "provider": "AI 제공자",
     "model": "모델",
     "persona": "페르소나",
+    "role": "역할",
+    "rolePlaceholder": "예: developer, code-reviewer",
+    "expertise": "전문 분야",
+    "expertisePlaceholder": "예: React, TypeScript, Node.js",
+    "description": "설명",
+    "descriptionPlaceholder": "에이전트의 성격이나 작업 스타일을 설명해주세요",
     "claude": "Claude",
     "codex": "Codex",
     "status": {
@@ -66,6 +73,13 @@
     "noAgentsToAdd": "에이전트를 먼저 생성하세요",
     "doubleClickToOpen": "더블클릭하여 DM 열기",
     "openDm": "{{name}}에게 메시지 보내기"
+  },
+  "permissions": {
+    "executeCli": "CLI 실행",
+    "createAgent": "에이전트 생성",
+    "createSession": "세션 생성",
+    "assignTask": "작업 지시",
+    "review": "코드 리뷰"
   },
   "terminal": {
     "title": "터미널",
