@@ -53,6 +53,9 @@ export function MemberPanel() {
 
   const openOrCreateDm = useCallback(
     async (agent: { id: string; name: string }) => {
+      const workspaceId = activeWorkspaceId;
+      if (!workspaceId) return;
+
       // Prevent duplicate creation
       if (pendingDm.current.has(agent.id)) return;
 
@@ -67,10 +70,10 @@ export function MemberPanel() {
       try {
         // Channel name includes agent id for uniqueness: "AgentName [agent-id]"
         const dmName = `${agent.name} [${agent.id}]`;
-        const ch = await createChannel(dmName, "dm");
+        const ch = await createChannel(dmName, "dm", workspaceId);
 
         // Guard: check workspace hasn't changed during await
-        if (useWorkspaceStore.getState().activeWorkspaceId !== activeWorkspaceId) {
+        if (useWorkspaceStore.getState().activeWorkspaceId !== workspaceId) {
           return;
         }
 
@@ -119,6 +122,7 @@ export function MemberPanel() {
               color={getAgentColor(i)}
               online
               onOpenDm={() => openOrCreateDm(agent)}
+              dmDisabled={!activeWorkspaceId}
             />
           ))}
 
@@ -139,6 +143,7 @@ export function MemberPanel() {
               color={getAgentColor(onlineAgents.length + i)}
               online={false}
               onOpenDm={() => openOrCreateDm(agent)}
+              dmDisabled={!activeWorkspaceId}
             />
           ))}
 
@@ -160,6 +165,7 @@ function AgentCard({
   color,
   online,
   onOpenDm,
+  dmDisabled,
 }: {
   name: string;
   model: string | null;
@@ -167,6 +173,7 @@ function AgentCard({
   color: string;
   online: boolean;
   onOpenDm: () => void;
+  dmDisabled: boolean;
 }) {
   const { t } = useTranslation();
   const initial = name[0]?.toUpperCase() ?? "?";
@@ -198,7 +205,8 @@ function AgentCard({
       {/* Explicit DM button — visible on hover, keyboard accessible */}
       <button
         onClick={onOpenDm}
-        className="shrink-0 rounded p-1 text-zinc-500 opacity-0 transition-opacity hover:bg-zinc-800 hover:text-zinc-200 focus:opacity-100 group-hover:opacity-100"
+        disabled={dmDisabled}
+        className="shrink-0 rounded p-1 text-zinc-500 opacity-0 transition-opacity hover:bg-zinc-800 hover:text-zinc-200 focus:opacity-100 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-500 group-hover:opacity-100"
         aria-label={t("dm.openDm", { name })}
         title={t("dm.openDm", { name })}
       >

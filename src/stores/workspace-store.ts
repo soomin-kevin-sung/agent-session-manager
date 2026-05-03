@@ -13,7 +13,11 @@ interface WorkspaceState {
   setActiveChannel: (id: string) => void;
   goHome: () => void;
   createWorkspace: (name: string, description?: string) => Promise<Workspace>;
-  createChannel: (name: string, channelType: "dm" | "group") => Promise<Channel>;
+  createChannel: (
+    name: string,
+    channelType: "dm" | "group",
+    workspaceId?: string
+  ) => Promise<Channel>;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
@@ -66,15 +70,17 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     return ws;
   },
 
-  createChannel: async (name, channelType) => {
-    const wsId = get().activeWorkspaceId;
+  createChannel: async (name, channelType, workspaceId) => {
+    const wsId = workspaceId ?? get().activeWorkspaceId;
     if (!wsId) throw new Error("No active workspace");
     const ch = await api.channels.create({
       workspace_id: wsId,
       name,
       channel_type: channelType,
     });
-    await get().setActiveWorkspace(wsId);
+    if (get().activeWorkspaceId === wsId) {
+      await get().setActiveWorkspace(wsId);
+    }
     return ch;
   },
 }));
