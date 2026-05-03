@@ -45,7 +45,7 @@ export function WorkspaceSidebar() {
 
   return (
     <TooltipProvider>
-      <div className="flex w-[60px] flex-col items-center gap-2 bg-zinc-950 py-3">
+      <div className="flex w-[72px] flex-col items-center gap-2 bg-zinc-950 py-3">
         <Tooltip>
           <TooltipTrigger
             className="relative flex cursor-pointer items-center justify-center"
