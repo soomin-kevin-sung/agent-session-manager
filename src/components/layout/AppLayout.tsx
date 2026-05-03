@@ -52,30 +52,28 @@ export function AppLayout() {
   const isHome = activeWorkspaceId === null;
   const shouldShowOnboarding = !onboardingCompleted && workspaces.length === 0;
 
-  if (shouldShowOnboarding) {
-    return (
-      <div className="dark h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
-        <OnboardingPage />
-        <WorkspaceCreationModal />
-      </div>
-    );
-  }
-
   return (
     <div className="dark flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
-      <WorkspaceSidebar />
-      {isHome ? (
-        <HomeView />
+      {shouldShowOnboarding ? (
+        <OnboardingPage />
       ) : (
         <>
-          <ChannelSidebar />
-          <div className="flex flex-1 flex-col min-w-0">
-            <ChatArea />
-            {showTerminalPanel && <TerminalPanel />}
-          </div>
-          {showMemberPanel && <MemberPanel />}
+          <WorkspaceSidebar />
+          {isHome ? (
+            <HomeView />
+          ) : (
+            <>
+              <ChannelSidebar />
+              <div className="flex flex-1 flex-col min-w-0">
+                <ChatArea />
+                {showTerminalPanel && <TerminalPanel />}
+              </div>
+              {showMemberPanel && <MemberPanel />}
+            </>
+          )}
         </>
       )}
+      {/* Modals — always rendered once, controlled by store state */}
       <AgentCreationModal />
       <WorkspaceCreationModal />
       <SessionCreationModal />

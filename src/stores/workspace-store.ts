@@ -59,6 +59,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   createWorkspace: async (name, description) => {
     const ws = await api.workspaces.create(name, description);
     await get().fetchWorkspaces();
+    await get().setActiveWorkspace(ws.id);
     return ws;
   },
 

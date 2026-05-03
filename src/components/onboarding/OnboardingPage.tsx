@@ -123,6 +123,7 @@ export function OnboardingPage() {
     let width = 0;
     let height = 0;
     let dpr = 1;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -134,13 +135,14 @@ export function OnboardingPage() {
     };
 
     const draw = (time: number) => {
-      const seconds = time / 1000;
+      const seconds = reducedMotion ? 0 : time / 1000;
       ctx.clearRect(0, 0, width, height);
 
+      const drift = reducedMotion ? 0 : 1;
       const positions = NODES.map((node) => ({
         ...node,
-        px: node.x * width + Math.sin(seconds * 0.7 + node.phase) * 7,
-        py: node.y * height + Math.cos(seconds * 0.55 + node.phase) * 8,
+        px: node.x * width + Math.sin(seconds * 0.7 + node.phase) * 7 * drift,
+        py: node.y * height + Math.cos(seconds * 0.55 + node.phase) * 8 * drift,
       }));
 
       ctx.save();
@@ -231,7 +233,9 @@ export function OnboardingPage() {
       }
 
       ctx.restore();
-      animationFrame = requestAnimationFrame(draw);
+      if (!reducedMotion) {
+        animationFrame = requestAnimationFrame(draw);
+      }
     };
 
     resize();
