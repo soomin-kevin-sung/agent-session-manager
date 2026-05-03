@@ -8,16 +8,10 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronDown, Hash, Plus, User } from "lucide-react";
 import { useState } from "react";
-import { api } from "@/lib/tauri";
+
 
 export function ChannelSidebar() {
   const { t } = useTranslation();
@@ -27,7 +21,6 @@ export function ChannelSidebar() {
     channels,
     activeChannelId,
     setActiveChannel,
-    createChannel,
   } = useWorkspaceStore();
   const { agents, activeRuns } = useAgentStore();
   const { setSessionCreationModal } = useUIStore();
@@ -40,23 +33,9 @@ export function ChannelSidebar() {
   const dmChannels = channels.filter((c) => c.channel_type === "dm");
   const groupChannels = channels.filter((c) => c.channel_type === "group");
 
-  // Agents that don't already have a DM channel
-  const dmChannelNames = new Set(dmChannels.map((c) => c.name));
-  const availableAgents = agents.filter((a) => !dmChannelNames.has(a.name));
-
   const handleChannelClick = (channelId: string) => {
     setActiveChannel(channelId);
     fetchMessages(channelId);
-  };
-
-  const handleAddDmAgent = async (agent: { id: string; name: string }) => {
-    const ch = await createChannel(agent.name, "dm");
-    try {
-      await api.sessions.addMember(ch.id, agent.id, "member");
-    } catch {
-      // addMember may not be available for channels; channel creation is sufficient
-    }
-    handleChannelClick(ch.id);
   };
 
   return (
@@ -71,41 +50,15 @@ export function ChannelSidebar() {
       {/* Channel list */}
       <ScrollArea className="flex-1">
         <div className="space-y-1 p-2">
-          {/* DM Section */}
+          {/* DM Section — channels only, no add button */}
           <Collapsible open={dmOpen} onOpenChange={setDmOpen}>
-            <div className="flex items-center justify-between px-1 py-1">
+            <div className="flex items-center px-1 py-1">
               <CollapsibleTrigger className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 hover:text-zinc-200">
                 <ChevronDown
                   className={`size-3 transition-transform ${dmOpen ? "" : "-rotate-90"}`}
                 />
                 {t("channel.dm")}
               </CollapsibleTrigger>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  className="text-zinc-400 hover:text-zinc-200"
-                  aria-label={t("dm.addAgent")}
-                >
-                  <Plus className="size-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="bottom" align="end">
-                  {availableAgents.length === 0 ? (
-                    <DropdownMenuItem disabled>
-                      <span className="text-xs text-zinc-500">
-                        {t("dm.noAgentsToAdd")}
-                      </span>
-                    </DropdownMenuItem>
-                  ) : (
-                    availableAgents.map((agent) => (
-                      <DropdownMenuItem
-                        key={agent.id}
-                        onClick={() => handleAddDmAgent(agent)}
-                      >
-                        {agent.name}
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
             <CollapsibleContent>
               {dmChannels.map((ch) => {

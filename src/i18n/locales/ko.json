@@ -63,7 +63,8 @@
   },
   "dm": {
     "addAgent": "에이전트 추가",
-    "noAgentsToAdd": "에이전트를 먼저 생성하세요"
+    "noAgentsToAdd": "에이전트를 먼저 생성하세요",
+    "doubleClickToOpen": "더블클릭하여 DM 열기"
   },
   "terminal": {
     "title": "터미널",

@@ -63,7 +63,8 @@
   },
   "dm": {
     "addAgent": "Add Agent",
-    "noAgentsToAdd": "Create an agent first"
+    "noAgentsToAdd": "Create an agent first",
+    "doubleClickToOpen": "Double-click to open DM"
   },
   "terminal": {
     "title": "Terminal",
