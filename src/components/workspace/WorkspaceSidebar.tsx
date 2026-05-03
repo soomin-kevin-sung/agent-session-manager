@@ -48,7 +48,7 @@ export function WorkspaceSidebar() {
       <div className="flex w-[60px] flex-col items-center gap-2 bg-zinc-950 py-3">
         <Tooltip>
           <TooltipTrigger
-            className="relative flex items-center justify-center"
+            className="relative flex cursor-pointer items-center justify-center"
             onClick={goHome}
           >
             {isHome && (
@@ -97,7 +97,7 @@ export function WorkspaceSidebar() {
 
         <Tooltip>
           <TooltipTrigger
-            className="flex size-10 items-center justify-center rounded-full bg-zinc-800 text-emerald-400 transition-all hover:rounded-2xl hover:bg-zinc-800 hover:text-emerald-300"
+            className="flex cursor-pointer size-10 items-center justify-center rounded-full bg-zinc-800 text-emerald-400 transition-all hover:rounded-2xl hover:bg-zinc-800 hover:text-emerald-300"
             onClick={() => setWorkspaceCreationModal(true)}
             aria-label={t("workspace.add")}
           >
@@ -112,7 +112,7 @@ export function WorkspaceSidebar() {
 
         <Tooltip>
           <TooltipTrigger
-            className="flex size-10 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+            className="flex cursor-pointer size-10 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
             aria-label={t("common.settings")}
           >
             <Settings className="size-5" />
