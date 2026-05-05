@@ -65,9 +65,19 @@ pub async fn start_agent_run(
             message: format!("No runtime registered for {:?}", runtime_kind),
         })?;
 
-    // 3. Build command spec
+    // 3. Build prompt with persona context
+    let full_prompt = if let Some(ref persona_json) = agent.persona {
+        format!(
+            "You are an AI agent with the following persona:\n{}\n\nUser request:\n{}",
+            persona_json, input.prompt
+        )
+    } else {
+        input.prompt.clone()
+    };
+
+    // 4. Build command spec
     let spec = runtime.build_command(
-        &input.prompt,
+        &full_prompt,
         input.work_dir.as_deref(),
         input.max_turns,
         input.allowed_tools.as_deref(),
