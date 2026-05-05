@@ -98,6 +98,7 @@ pub async fn start_agent_run(
         Some(resolved_work_dir.as_str()),
         input.max_turns,
         input.allowed_tools.as_deref(),
+        agent.model_name.as_deref(),
         input.extra_args.as_deref(),
     )?;
 

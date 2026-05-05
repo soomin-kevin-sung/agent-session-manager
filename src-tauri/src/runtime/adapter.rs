@@ -108,6 +108,7 @@ pub trait AgentRuntime: Send + Sync {
         work_dir: Option<&str>,
         max_turns: Option<u32>,
         allowed_tools: Option<&[String]>,
+        model_name: Option<&str>,
         extra_args: Option<&[String]>,
     ) -> AppResult<CommandSpec>;
 

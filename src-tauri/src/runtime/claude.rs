@@ -24,6 +24,7 @@ impl AgentRuntime for ClaudeRuntime {
         work_dir: Option<&str>,
         max_turns: Option<u32>,
         allowed_tools: Option<&[String]>,
+        model_name: Option<&str>,
         extra_args: Option<&[String]>,
     ) -> AppResult<CommandSpec> {
         let mut args = vec![
@@ -43,6 +44,11 @@ impl AgentRuntime for ClaudeRuntime {
         if let Some(tools) = allowed_tools {
             args.push("--allowedTools".into());
             args.push(tools.join(","));
+        }
+
+        if let Some(model) = model_name {
+            args.push("--model".into());
+            args.push(model.into());
         }
 
         if let Some(extra) = extra_args {
@@ -158,7 +164,7 @@ mod tests {
     fn test_build_command_basic() {
         let rt = ClaudeRuntime::new(None);
         let spec = rt
-            .build_command("hello", Some("/tmp"), None, None, None)
+            .build_command("hello", Some("/tmp"), None, None, None, None)
             .unwrap();
         assert_eq!(spec.program, "claude");
         assert!(spec.args.contains(&"-p".into()));
@@ -172,11 +178,36 @@ mod tests {
         let rt = ClaudeRuntime::new(Some("/usr/bin/claude".into()));
         let tools = vec!["Bash".into(), "Read".into()];
         let spec = rt
-            .build_command("test", None, Some(5), Some(&tools), None)
+            .build_command("test", None, Some(5), Some(&tools), None, None)
             .unwrap();
         assert_eq!(spec.program, "/usr/bin/claude");
         assert!(spec.args.contains(&"5".into()));
         assert!(spec.args.contains(&"Bash,Read".into()));
+    }
+
+    #[test]
+    fn test_build_command_with_model_name() {
+        let rt = ClaudeRuntime::new(None);
+        let spec = rt
+            .build_command(
+                "hello",
+                None,
+                None,
+                None,
+                Some("claude-sonnet-4-5"),
+                None,
+            )
+            .unwrap();
+
+        let model_index = spec
+            .args
+            .iter()
+            .position(|arg| arg == "--model")
+            .expect("Claude args should include --model");
+        assert_eq!(
+            spec.args.get(model_index + 1).map(String::as_str),
+            Some("claude-sonnet-4-5")
+        );
     }
 
     #[test]

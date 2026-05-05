@@ -24,6 +24,7 @@ impl AgentRuntime for CodexRuntime {
         work_dir: Option<&str>,
         _max_turns: Option<u32>,
         _allowed_tools: Option<&[String]>,
+        model_name: Option<&str>,
         extra_args: Option<&[String]>,
     ) -> AppResult<CommandSpec> {
         let mut args = vec![
@@ -39,6 +40,11 @@ impl AgentRuntime for CodexRuntime {
         if let Some(dir) = work_dir {
             args.push("-C".into());
             args.push(dir.into());
+        }
+
+        if let Some(model) = model_name {
+            args.push("-m".into());
+            args.push(model.into());
         }
 
         if let Some(extra) = extra_args {
@@ -204,13 +210,36 @@ mod tests {
     fn test_build_command() {
         let rt = CodexRuntime::new(None);
         let spec = rt
-            .build_command("hello", Some("/tmp"), None, None, None)
+            .build_command("hello", Some("/tmp"), None, None, None, None)
             .unwrap();
         assert_eq!(spec.program, "codex");
         assert!(spec.args.contains(&"exec".into()));
         assert!(spec.args.contains(&"--json".into()));
         assert!(spec.args.contains(&"-C".into()));
         assert!(spec.args.contains(&"/tmp".into()));
+    }
+
+    #[test]
+    fn test_build_command_with_model_name_before_prompt() {
+        let rt = CodexRuntime::new(None);
+        let spec = rt
+            .build_command("hello", None, None, None, Some("gpt-5.2"), None)
+            .unwrap();
+
+        let model_index = spec
+            .args
+            .iter()
+            .position(|arg| arg == "-m")
+            .expect("Codex args should include -m");
+        assert_eq!(
+            spec.args.get(model_index + 1).map(String::as_str),
+            Some("gpt-5.2")
+        );
+        assert!(
+            model_index < spec.args.len() - 1,
+            "model flag should be inserted before the prompt"
+        );
+        assert_eq!(spec.args.last().map(String::as_str), Some("hello"));
     }
 
     #[test]
