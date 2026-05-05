@@ -31,6 +31,7 @@ impl AgentRuntime for ClaudeRuntime {
             prompt.into(),
             "--output-format".into(),
             "stream-json".into(),
+            "--verbose".into(),
             "--no-session-persistence".into(),
         ];
 
