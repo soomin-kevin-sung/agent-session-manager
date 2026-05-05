@@ -114,6 +114,15 @@
     "thinking": "에이전트가 생각하는 중...",
     "agentRunFailed": "에이전트 실행 실패: {{message}}"
   },
+  "proposal": {
+    "title": "실행 계획",
+    "approve": "승인",
+    "reject": "거절",
+    "approved": "승인됨",
+    "rejected": "거절됨",
+    "tasks": "작업 {{count}}개",
+    "noTasks": "작업이 없습니다"
+  },
   "common": {
     "cancel": "취소",
     "confirm": "확인",

@@ -19,6 +19,53 @@ pub struct StartRunInput {
     pub extra_args: Option<Vec<String>>,
 }
 
+const MANAGER_PLAN_PROMPT: &str = r#"If the user's request requires multiple tasks, respond with a plan in the following JSON format inside a ```json code block:
+{
+  "plan_title": "...",
+  "summary": "...",
+  "tasks": [
+    {
+      "title": "...",
+      "description": "...",
+      "agent_preset": "developer|frontend-developer|backend-developer|code-reviewer|devops-engineer|qa-engineer",
+      "acceptance_criteria": ["...", "..."]
+    }
+  ]
+}
+If the request is simple enough for a single response, just answer directly without JSON."#;
+
+fn build_full_prompt(
+    persona: Option<&str>,
+    user_prompt: &str,
+    include_manager_plan_prompt: bool,
+) -> String {
+    let plan_prompt = if include_manager_plan_prompt {
+        format!("\n\n{}", MANAGER_PLAN_PROMPT)
+    } else {
+        String::new()
+    };
+
+    if let Some(persona_json) = persona {
+        format!(
+            "You are an AI agent with the following persona:\n{}{}\n\nUser request:\n{}",
+            persona_json, plan_prompt, user_prompt
+        )
+    } else if include_manager_plan_prompt {
+        format!("{}\n\nUser request:\n{}", MANAGER_PLAN_PROMPT, user_prompt)
+    } else {
+        user_prompt.to_string()
+    }
+}
+
+async fn has_manager_permissions(pool: &db::DbPool, agent_id: &str) -> Result<bool, AppError> {
+    let can_create_agent =
+        db::permissions::check(pool, agent_id, "create_agent", "global", None).await?;
+    let can_assign_task =
+        db::permissions::check(pool, agent_id, "assign_task", "global", None).await?;
+
+    Ok(can_create_agent && can_assign_task)
+}
+
 async fn resolve_run_channel_id(
     pool: &db::DbPool,
     channel_id: Option<&str>,
@@ -66,14 +113,11 @@ pub async fn start_agent_run(
         })?;
 
     // 3. Build prompt with persona context
-    let full_prompt = if let Some(ref persona_json) = agent.persona {
-        format!(
-            "You are an AI agent with the following persona:\n{}\n\nUser request:\n{}",
-            persona_json, input.prompt
-        )
-    } else {
-        input.prompt.clone()
-    };
+    let full_prompt = build_full_prompt(
+        agent.persona.as_deref(),
+        &input.prompt,
+        has_manager_permissions(&state.db, &agent.id).await?,
+    );
 
     // 4. Resolve work directory: explicit > session > home directory (never inherit app cwd)
     let resolved_work_dir = if let Some(ref dir) = input.work_dir {
@@ -361,5 +405,16 @@ mod tests {
         let channel_id = resolve_run_channel_id(&pool, None, Some(&session_id)).await;
 
         assert_eq!(channel_id, Some(session_channel_id));
+    }
+
+    #[test]
+    fn manager_prompt_includes_json_plan_instruction_after_persona() {
+        let prompt = build_full_prompt(Some("{\"role\":\"Manager\"}"), "Build this feature", true);
+
+        assert!(prompt.contains("You are an AI agent with the following persona:"));
+        assert!(prompt.contains("If the user's request requires multiple tasks"));
+        assert!(prompt.contains("\"plan_title\""));
+        assert!(prompt.contains("```json"));
+        assert!(prompt.ends_with("User request:\nBuild this feature"));
     }
 }

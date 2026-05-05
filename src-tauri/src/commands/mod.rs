@@ -1,4 +1,5 @@
 pub mod agent_commands;
+pub mod manager_commands;
 pub mod message_commands;
 pub mod permission_commands;
 pub mod run_commands;

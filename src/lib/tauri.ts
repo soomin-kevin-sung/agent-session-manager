@@ -83,6 +83,21 @@ export interface Message {
   created_at: string;
 }
 
+export interface Task {
+  id: string;
+  session_id: string;
+  channel_id: string;
+  title: string;
+  description: string | null;
+  created_by_type: string;
+  created_by_id: string;
+  assigned_to_id: string | null;
+  status: string;
+  priority: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // Session types
 export interface Session {
   id: string;
@@ -240,6 +255,18 @@ export const api = {
   permissions: {
     check: (agentId: string, permissionType: string, scopeType: string, scopeId?: string) => invoke<boolean>("check_permission", { agentId, permissionType, scopeType, scopeId }),
     listForAgent: (agentId: string) => invoke<AgentPermission[]>("list_agent_permissions", { agentId }),
+  },
+  tasks: {
+    createFromProposal: (
+      sessionId: string,
+      channelId: string,
+      proposal: { tasks: unknown[] },
+    ) =>
+      invoke<Task[]>("approve_proposal", {
+        sessionId,
+        channelId,
+        tasksJson: JSON.stringify(proposal.tasks),
+      }),
   },
   runs: {
     start: (input: StartRunInput) => invoke<string>("start_agent_run", { input }),

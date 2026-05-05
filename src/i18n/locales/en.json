@@ -114,6 +114,16 @@
     "thinking": "Agent is thinking...",
     "agentRunFailed": "Agent run failed: {{message}}"
   },
+  "proposal": {
+    "title": "Execution Plan",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "tasks": "{{count}} task",
+    "tasks_other": "{{count}} tasks",
+    "noTasks": "No tasks"
+  },
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm",

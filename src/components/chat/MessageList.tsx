@@ -54,7 +54,7 @@ export function MessageList({ channelId }: MessageListProps) {
           </div>
         )}
         {messages.map((msg) => (
-          <MessageItem key={msg.id} message={msg} />
+          <MessageItem key={msg.id} message={msg} sessionId={channel?.session_id} />
         ))}
         {agentThinking && (
           <div className="flex gap-3 rounded-md px-2 py-2">

@@ -104,6 +104,7 @@ pub fn run() {
             commands::settings_commands::save_app_settings,
             commands::message_commands::send_message,
             commands::message_commands::list_messages,
+            commands::manager_commands::approve_proposal,
             commands::run_commands::start_agent_run,
             commands::run_commands::stop_agent_run,
             commands::run_commands::list_active_runs,

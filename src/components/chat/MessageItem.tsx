@@ -1,8 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { useAgentStore } from "@/stores/agent-store";
 import type { Message } from "@/lib/tauri";
+import { parsePlanProposal } from "@/lib/proposal-parser";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ProposalCard } from "@/components/chat/ProposalCard";
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -36,9 +38,10 @@ function formatTime(isoString: string) {
 
 interface MessageItemProps {
   message: Message;
+  sessionId?: string | null;
 }
 
-export function MessageItem({ message }: MessageItemProps) {
+export function MessageItem({ message, sessionId }: MessageItemProps) {
   const { t } = useTranslation();
   const getAgentById = useAgentStore((s) => s.getAgentById);
 
@@ -66,6 +69,8 @@ export function MessageItem({ message }: MessageItemProps) {
 
   const hasCliLog = message.metadata != null;
   const messageType = message.message_type;
+  const proposalSessionId = isAgent && sessionId ? sessionId : null;
+  const proposal = proposalSessionId ? parsePlanProposal(message.content) : null;
   const showBadge =
     messageType === "report" ||
     messageType === "review" ||
@@ -96,9 +101,17 @@ export function MessageItem({ message }: MessageItemProps) {
           </span>
         </div>
 
-        <p className="whitespace-pre-wrap text-sm text-zinc-300">
-          {message.content}
-        </p>
+        {proposal && proposalSessionId ? (
+          <ProposalCard
+            sessionId={proposalSessionId}
+            channelId={message.channel_id}
+            proposal={proposal}
+          />
+        ) : (
+          <p className="whitespace-pre-wrap text-sm text-zinc-300">
+            {message.content}
+          </p>
+        )}
 
         {hasCliLog && <CollapsibleCliLog metadata={message.metadata!} />}
       </div>
