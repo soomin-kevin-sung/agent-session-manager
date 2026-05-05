@@ -12,6 +12,7 @@
     "create": "워크스페이스 생성",
     "name": "워크스페이스 이름",
     "description": "설명",
+    "edit": "워크스페이스 편집",
     "add": "워크스페이스 추가",
     "firstCreate": "첫 워크스페이스 만들기",
     "firstCreateDescription": "프로젝트나 팀 단위로 AI 에이전트와 함께 작업할 공간을 만드세요.",
@@ -152,6 +153,17 @@
     "title": "홈",
     "welcome": "워크스페이스를 선택하거나 새로 만드세요",
     "noDescription": "설명 없음"
+  },
+  "settings": {
+    "title": "설정",
+    "claudePath": "Claude CLI 경로",
+    "codexPath": "Codex CLI 경로",
+    "language": "언어",
+    "languageSystem": "시스템",
+    "languageKorean": "한국어",
+    "languageEnglish": "영어",
+    "save": "저장",
+    "saved": "저장됨"
   },
   "terminal": {
     "title": "터미널",

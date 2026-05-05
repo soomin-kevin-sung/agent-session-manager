@@ -46,6 +46,16 @@ export interface Workspace {
   updated_at: string;
 }
 
+export interface AppSettings {
+  database_path: string;
+  claude_cli_path: string | null;
+  codex_cli_path: string | null;
+  language: "system" | "ko" | "en";
+  default_sandbox_mode: string;
+  process_timeout_secs: number;
+  max_log_size_mb: number;
+}
+
 // Channel types
 export interface Channel {
   id: string;
@@ -198,7 +208,13 @@ export const api = {
   workspaces: {
     create: (name: string, description?: string) =>
       invoke<Workspace>("create_workspace", { name, description }),
+    update: (id: string, name: string, description?: string) =>
+      invoke<Workspace>("update_workspace", { id, name, description }),
     list: () => invoke<Workspace[]>("list_workspaces"),
+  },
+  settings: {
+    load: () => invoke<AppSettings>("load_app_settings"),
+    save: (settings: AppSettings) => invoke<AppSettings>("save_app_settings", { settings }),
   },
   channels: {
     create: (input: { workspace_id: string; name: string; channel_type: string }) =>

@@ -37,7 +37,12 @@ pub fn run() {
                     .expect("failed to get app data dir");
                 std::fs::create_dir_all(&app_dir).ok();
 
-                let settings = AppSettings::default();
+                let settings_path = config::settings::settings_path(&app_dir);
+                let settings = config::settings::load_from_file(&settings_path)
+                    .unwrap_or_else(|error| {
+                        log::error!("Failed to load settings: {}", error);
+                        AppSettings::default()
+                    });
                 let db_path = app_dir.join(&settings.database_path);
                 let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
 
@@ -92,8 +97,11 @@ pub fn run() {
             commands::agent_commands::delete_agent,
             commands::workspace_commands::create_workspace,
             commands::workspace_commands::list_workspaces,
+            commands::workspace_commands::update_workspace,
             commands::workspace_commands::create_channel,
             commands::workspace_commands::list_channels,
+            commands::settings_commands::load_app_settings,
+            commands::settings_commands::save_app_settings,
             commands::message_commands::send_message,
             commands::message_commands::list_messages,
             commands::run_commands::start_agent_run,

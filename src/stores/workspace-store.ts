@@ -14,6 +14,11 @@ interface WorkspaceState {
   setActiveChannel: (id: string) => void;
   goHome: () => void;
   createWorkspace: (name: string, description?: string) => Promise<Workspace>;
+  updateWorkspace: (
+    id: string,
+    name: string,
+    description?: string
+  ) => Promise<Workspace>;
   createChannel: (
     name: string,
     channelType: "dm" | "group",
@@ -102,6 +107,21 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       return ws;
     } catch (error) {
       console.error("Failed to create workspace", error);
+      throw error;
+    }
+  },
+
+  updateWorkspace: async (id, name, description) => {
+    try {
+      const ws = await api.workspaces.update(id, name, description);
+      set((state) => ({
+        workspaces: state.workspaces.map((item) =>
+          item.id === id ? ws : item
+        ),
+      }));
+      return ws;
+    } catch (error) {
+      console.error("Failed to update workspace", error);
       throw error;
     }
   },

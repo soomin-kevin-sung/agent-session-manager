@@ -6,6 +6,7 @@ import { TerminalPanel } from "@/components/terminal/TerminalPanel";
 import { AgentCreationModal } from "@/components/agent/AgentCreationModal";
 import { AgentEditModal } from "@/components/agent/AgentEditModal";
 import { WorkspaceCreationModal } from "@/components/workspace/WorkspaceCreationModal";
+import { SettingsModal } from "@/components/settings/SettingsModal";
 import { HomeView } from "@/components/home/HomeView";
 import { OnboardingPage } from "@/components/onboarding/OnboardingPage";
 import { SessionCreationModal } from "@/components/session/SessionCreationModal";
@@ -104,6 +105,7 @@ export function AppLayout() {
       <AgentCreationModal />
       <AgentEditModal />
       <WorkspaceCreationModal />
+      <SettingsModal />
       <SessionCreationModal />
     </div>
   );

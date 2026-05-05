@@ -41,6 +41,7 @@ export function WorkspaceSidebar() {
   const setWorkspaceCreationModal = useUIStore(
     (s) => s.setWorkspaceCreationModal
   );
+  const setSettingsModal = useUIStore((s) => s.setSettingsModal);
   const isHome = activeWorkspaceId === null;
 
   return (
@@ -113,6 +114,7 @@ export function WorkspaceSidebar() {
         <Tooltip>
           <TooltipTrigger
             className="flex cursor-pointer size-10 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+            onClick={() => setSettingsModal(true)}
             aria-label={t("common.settings")}
           >
             <Settings className="size-5" />

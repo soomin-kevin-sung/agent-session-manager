@@ -12,6 +12,7 @@
     "create": "Create Workspace",
     "name": "Workspace Name",
     "description": "Description",
+    "edit": "Edit Workspace",
     "add": "Add Workspace",
     "firstCreate": "Create your first workspace",
     "firstCreateDescription": "Create a workspace to collaborate with AI agents on your projects.",
@@ -152,6 +153,17 @@
     "title": "Home",
     "welcome": "Select a workspace or create a new one",
     "noDescription": "No description"
+  },
+  "settings": {
+    "title": "Settings",
+    "claudePath": "Claude CLI Path",
+    "codexPath": "Codex CLI Path",
+    "language": "Language",
+    "languageSystem": "System",
+    "languageKorean": "Korean",
+    "languageEnglish": "English",
+    "save": "Save",
+    "saved": "Saved"
   },
   "terminal": {
     "title": "Terminal",

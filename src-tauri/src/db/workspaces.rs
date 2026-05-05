@@ -56,6 +56,26 @@ pub async fn list(pool: &DbPool) -> AppResult<Vec<Workspace>> {
         .map_err(Into::into)
 }
 
+pub async fn update(
+    pool: &DbPool,
+    id: &str,
+    name: &str,
+    description: Option<String>,
+) -> AppResult<Workspace> {
+    sqlx::query_as::<_, Workspace>(
+        "UPDATE workspaces SET name = ?, description = ?, updated_at = datetime('now') WHERE id = ? RETURNING *",
+    )
+    .bind(name)
+    .bind(description)
+    .bind(id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| crate::AppError::NotFound {
+        entity: "workspace".into(),
+        id: id.into(),
+    })
+}
+
 pub async fn delete(pool: &DbPool, id: &str) -> AppResult<()> {
     let result = sqlx::query("DELETE FROM workspaces WHERE id = ?")
         .bind(id)
@@ -102,5 +122,34 @@ mod tests {
 
         delete(&pool, &ws.id).await.unwrap();
         assert!(get_by_id(&pool, &ws.id).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_workspace_update_name_and_description() {
+        let pool = db::create_test_pool().await;
+
+        let ws = create(
+            &pool,
+            &CreateWorkspace {
+                name: "Project Alpha".into(),
+                description: Some("Main project".into()),
+                created_by_type: "user".into(),
+                created_by_id: "user-1".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        let updated = update(&pool, &ws.id, "Project Beta", Some("Renamed project".into()))
+            .await
+            .unwrap();
+
+        assert_eq!(updated.id, ws.id);
+        assert_eq!(updated.name, "Project Beta");
+        assert_eq!(updated.description, Some("Renamed project".into()));
+
+        let fetched = get_by_id(&pool, &ws.id).await.unwrap();
+        assert_eq!(fetched.name, "Project Beta");
+        assert_eq!(fetched.description, Some("Renamed project".into()));
     }
 }

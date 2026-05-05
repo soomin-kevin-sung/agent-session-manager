@@ -37,6 +37,16 @@ pub async fn list_workspaces(
 }
 
 #[tauri::command]
+pub async fn update_workspace(
+    state: State<'_, AppState>,
+    id: String,
+    name: String,
+    description: Option<String>,
+) -> Result<workspaces::Workspace, AppError> {
+    workspaces::update(&state.db, &id, &name, description).await
+}
+
+#[tauri::command]
 pub async fn create_channel(
     state: State<'_, AppState>,
     input: CreateChannel,

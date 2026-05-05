@@ -6,6 +6,7 @@ interface UIState {
   showAgentCreationModal: boolean;
   showWorkspaceCreationModal: boolean;
   showSessionCreationModal: boolean;
+  showSettingsModal: boolean;
   editingAgentId: string | null;
 
   toggleMemberPanel: () => void;
@@ -13,6 +14,7 @@ interface UIState {
   setAgentCreationModal: (show: boolean) => void;
   setWorkspaceCreationModal: (show: boolean) => void;
   setSessionCreationModal: (show: boolean) => void;
+  setSettingsModal: (show: boolean) => void;
   setEditingAgent: (id: string | null) => void;
 }
 
@@ -22,6 +24,7 @@ export const useUIStore = create<UIState>((set) => ({
   showAgentCreationModal: false,
   showWorkspaceCreationModal: false,
   showSessionCreationModal: false,
+  showSettingsModal: false,
   editingAgentId: null,
 
   toggleMemberPanel: () => set((s) => ({ showMemberPanel: !s.showMemberPanel })),
@@ -29,5 +32,6 @@ export const useUIStore = create<UIState>((set) => ({
   setAgentCreationModal: (show) => set({ showAgentCreationModal: show }),
   setWorkspaceCreationModal: (show) => set({ showWorkspaceCreationModal: show }),
   setSessionCreationModal: (show) => set({ showSessionCreationModal: show }),
+  setSettingsModal: (show) => set({ showSettingsModal: show }),
   setEditingAgent: (id) => set({ editingAgentId: id }),
 }));
