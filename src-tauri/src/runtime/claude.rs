@@ -53,7 +53,9 @@ impl AgentRuntime for ClaudeRuntime {
             program: self.cli_path.clone(),
             args,
             work_dir: work_dir.map(String::from),
-            env_vars: vec![],
+            env_vars: vec![
+                ("CLAUDE_CODE_DISABLE_AUTO_MEMORY".into(), "1".into()),
+            ],
             env_clear: false,
         })
     }

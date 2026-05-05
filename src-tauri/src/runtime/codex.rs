@@ -51,7 +51,9 @@ impl AgentRuntime for CodexRuntime {
             program: self.cli_path.clone(),
             args,
             work_dir: None, // Codex uses -C flag
-            env_vars: vec![],
+            env_vars: vec![
+                ("CLAUDE_CODE_DISABLE_AUTO_MEMORY".into(), "1".into()),
+            ],
             env_clear: false,
         })
     }
