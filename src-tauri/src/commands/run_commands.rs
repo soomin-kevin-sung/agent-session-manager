@@ -75,10 +75,28 @@ pub async fn start_agent_run(
         input.prompt.clone()
     };
 
-    // 4. Build command spec
+    // 4. Resolve work directory: explicit > session > home directory (never inherit app cwd)
+    let resolved_work_dir = if let Some(ref dir) = input.work_dir {
+        dir.clone()
+    } else if let Some(ref sid) = input.session_id {
+        match db::sessions::get_by_id(&state.db, sid).await {
+            Ok(session) => session.work_directory,
+            Err(_) => dirs::home_dir()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string(),
+        }
+    } else {
+        dirs::home_dir()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string()
+    };
+
+    // 5. Build command spec
     let spec = runtime.build_command(
         &full_prompt,
-        input.work_dir.as_deref(),
+        Some(resolved_work_dir.as_str()),
         input.max_turns,
         input.allowed_tools.as_deref(),
         input.extra_args.as_deref(),
