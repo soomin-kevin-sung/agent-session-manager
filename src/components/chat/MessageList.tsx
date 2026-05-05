@@ -39,14 +39,14 @@ export function MessageList({ channelId }: MessageListProps) {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center">
         <div className="size-6 animate-spin rounded-full border-2 border-zinc-800 border-t-emerald-400" />
       </div>
     );
   }
 
   return (
-    <ScrollArea className="flex-1">
+    <ScrollArea className="min-h-0 flex-1 overflow-hidden">
       <div className="flex flex-col gap-0.5 p-4">
         {messages.length === 0 && (
           <div className="flex flex-1 items-center justify-center py-20">
