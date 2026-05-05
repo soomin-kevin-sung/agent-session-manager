@@ -15,6 +15,17 @@ pub struct Channel {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ChannelWithSession {
+    pub id: String,
+    pub workspace_id: String,
+    pub name: String,
+    pub channel_type: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct ChannelMember {
     pub channel_id: String,
     pub agent_id: String,
@@ -56,6 +67,30 @@ pub async fn get_by_id(pool: &DbPool, id: &str) -> AppResult<Channel> {
 pub async fn list_by_workspace(pool: &DbPool, workspace_id: &str) -> AppResult<Vec<Channel>> {
     sqlx::query_as::<_, Channel>(
         "SELECT * FROM channels WHERE workspace_id = ? ORDER BY created_at",
+    )
+    .bind(workspace_id)
+    .fetch_all(pool)
+    .await
+    .map_err(Into::into)
+}
+
+pub async fn list_by_workspace_with_session(
+    pool: &DbPool,
+    workspace_id: &str,
+) -> AppResult<Vec<ChannelWithSession>> {
+    sqlx::query_as::<_, ChannelWithSession>(
+        "SELECT
+            channels.id,
+            channels.workspace_id,
+            channels.name,
+            channels.channel_type,
+            channels.created_at,
+            channels.updated_at,
+            sessions.id AS session_id
+         FROM channels
+         LEFT JOIN sessions ON sessions.channel_id = channels.id
+         WHERE channels.workspace_id = ?
+         ORDER BY channels.created_at",
     )
     .bind(workspace_id)
     .fetch_all(pool)
@@ -198,5 +233,59 @@ mod tests {
         remove_member(&pool, &ch.id, &agent_id).await.unwrap();
         let members = list_members(&pool, &ch.id).await.unwrap();
         assert_eq!(members.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_list_by_workspace_with_session_includes_optional_session_id() {
+        let pool = db::create_test_pool().await;
+        let ws_id = setup_workspace(&pool).await;
+
+        let dm = create(
+            &pool,
+            &CreateChannel {
+                workspace_id: ws_id.clone(),
+                name: "dm".into(),
+                channel_type: "dm".into(),
+            },
+        )
+        .await
+        .unwrap();
+        let session_channel = create(
+            &pool,
+            &CreateChannel {
+                workspace_id: ws_id.clone(),
+                name: "session".into(),
+                channel_type: "group".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        let session = db::sessions::create(
+            &pool,
+            &db::sessions::CreateSession {
+                workspace_id: ws_id.clone(),
+                channel_id: session_channel.id.clone(),
+                name: "Work session".into(),
+                work_directory: "/tmp/project".into(),
+                git_branch: None,
+                created_by_type: "user".into(),
+                created_by_id: "user-1".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        let channels = list_by_workspace_with_session(&pool, &ws_id).await.unwrap();
+        assert_eq!(channels.len(), 2);
+
+        let dm_channel = channels.iter().find(|channel| channel.id == dm.id).unwrap();
+        assert_eq!(dm_channel.session_id, None);
+
+        let session_result = channels
+            .iter()
+            .find(|channel| channel.id == session_channel.id)
+            .unwrap();
+        assert_eq!(session_result.session_id.as_deref(), Some(session.id.as_str()));
     }
 }

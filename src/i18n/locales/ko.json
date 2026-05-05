@@ -131,7 +131,9 @@
     "name": "세션 이름",
     "workDirectory": "작업 디렉토리",
     "selectAgents": "에이전트 선택",
-    "noAgentsAvailable": "사용 가능한 에이전트가 없습니다"
+    "noAgentsAvailable": "사용 가능한 에이전트가 없습니다",
+    "noMembers": "이 세션에 에이전트가 없습니다. 에이전트를 추가해주세요.",
+    "selectAgent": "에이전트 선택"
   },
   "dm": {
     "addAgent": "에이전트 추가",

@@ -48,6 +48,6 @@ pub async fn create_channel(
 pub async fn list_channels(
     state: State<'_, AppState>,
     workspace_id: String,
-) -> Result<Vec<channels::Channel>, AppError> {
-    channels::list_by_workspace(&state.db, &workspace_id).await
+) -> Result<Vec<channels::ChannelWithSession>, AppError> {
+    channels::list_by_workspace_with_session(&state.db, &workspace_id).await
 }

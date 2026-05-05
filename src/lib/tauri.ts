@@ -46,6 +46,7 @@ export interface Channel {
   channel_type: "dm" | "group";
   created_at: string;
   updated_at: string;
+  session_id: string | null;
 }
 
 // Message types

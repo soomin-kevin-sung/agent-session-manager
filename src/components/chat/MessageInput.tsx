@@ -1,9 +1,9 @@
-import { useState, useCallback, type KeyboardEvent } from "react";
+import { useState, useCallback, useEffect, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useMessageStore } from "@/stores/message-store";
 import { useAgentStore } from "@/stores/agent-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
-import { api } from "@/lib/tauri";
+import { api, type SessionMember } from "@/lib/tauri";
 import { parseAgentIdFromDmChannelName } from "@/lib/channel-utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -19,16 +19,78 @@ export function MessageInput({ channelId }: MessageInputProps) {
   const addSystemMessage = useMessageStore((s) => s.addSystemMessage);
   const setRunActive = useAgentStore((s) => s.setRunActive);
   const setRunChannel = useAgentStore((s) => s.setRunChannel);
+  const agents = useAgentStore((s) => s.agents);
   const channels = useWorkspaceStore((s) => s.channels);
   const [content, setContent] = useState("");
   const [error, setError] = useState(false);
+  const [sessionMembers, setSessionMembers] = useState<SessionMember[] | null>(null);
+  const [selectedAgentId, setSelectedAgentId] = useState("");
+
+  const channel = channels.find((ch) => ch.id === channelId);
+  const sessionId = channel?.session_id ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setSessionMembers(null);
+    setSelectedAgentId("");
+
+    if (!sessionId) return;
+
+    void api.sessions
+      .listMembers(sessionId)
+      .then((members) => {
+        if (cancelled) return;
+        setSessionMembers(members);
+        setSelectedAgentId(members[0]?.agent_id ?? "");
+      })
+      .catch((memberError) => {
+        if (cancelled) return;
+        console.error("Failed to load session members", memberError);
+        setSessionMembers([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
+
+  const getSessionMembers = useCallback(async () => {
+    if (!sessionId) return [];
+    if (sessionMembers) return sessionMembers;
+
+    const members = await api.sessions.listMembers(sessionId);
+    setSessionMembers(members);
+    setSelectedAgentId((current) => current || members[0]?.agent_id || "");
+    return members;
+  }, [sessionId, sessionMembers]);
+
+  const getAgentName = useCallback(
+    (agentId: string) => agents.find((agent) => agent.id === agentId)?.name ?? agentId,
+    [agents]
+  );
 
   const startAgentRun = useCallback(
     async (prompt: string) => {
+      let agentId: string | null = null;
       const channel = channels.find((ch) => ch.id === channelId);
-      if (channel?.channel_type !== "dm") return;
+      const currentSessionId = channel?.session_id ?? null;
 
-      const agentId = parseAgentIdFromDmChannelName(channel.name);
+      if (currentSessionId) {
+        const members = await getSessionMembers();
+        if (members.length === 0) {
+          addSystemMessage(channelId, t("session.noMembers"));
+          return;
+        }
+        agentId =
+          members.length === 1
+            ? members[0].agent_id
+            : selectedAgentId || members[0].agent_id;
+      } else {
+        if (channel?.channel_type !== "dm") return;
+        agentId = parseAgentIdFromDmChannelName(channel.name);
+      }
+
       if (!agentId) return;
 
       try {
@@ -36,7 +98,7 @@ export function MessageInput({ channelId }: MessageInputProps) {
           agent_id: agentId,
           prompt,
           channel_id: channelId,
-          session_id: undefined,
+          session_id: currentSessionId ?? undefined,
         });
         setRunActive(agentId, runId);
         setRunChannel(runId, channelId);
@@ -49,7 +111,16 @@ export function MessageInput({ channelId }: MessageInputProps) {
         );
       }
     },
-    [addSystemMessage, channelId, channels, setRunActive, setRunChannel, t]
+    [
+      addSystemMessage,
+      channelId,
+      channels,
+      getSessionMembers,
+      selectedAgentId,
+      setRunActive,
+      setRunChannel,
+      t,
+    ]
   );
 
   const handleSend = useCallback(async () => {
@@ -94,6 +165,20 @@ export function MessageInput({ channelId }: MessageInputProps) {
           className="min-h-[20px] flex-1 resize-none border-0 bg-transparent p-0 text-sm text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:border-transparent"
           rows={1}
         />
+        {sessionId && sessionMembers && sessionMembers.length > 1 && (
+          <select
+            value={selectedAgentId}
+            onChange={(e) => setSelectedAgentId(e.target.value)}
+            aria-label={t("session.selectAgent")}
+            className="h-8 max-w-44 shrink-0 rounded-md border border-zinc-700 bg-zinc-800 px-2 text-xs text-zinc-100 focus:outline-none focus-visible:border-zinc-600 focus-visible:ring-1 focus-visible:ring-sky-500/40"
+          >
+            {sessionMembers.map((member) => (
+              <option key={member.agent_id} value={member.agent_id}>
+                {getAgentName(member.agent_id)}
+              </option>
+            ))}
+          </select>
+        )}
         <Button
           variant="ghost"
           size="icon-sm"

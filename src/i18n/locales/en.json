@@ -131,7 +131,9 @@
     "name": "Session Name",
     "workDirectory": "Work Directory",
     "selectAgents": "Select Agents",
-    "noAgentsAvailable": "No agents available"
+    "noAgentsAvailable": "No agents available",
+    "noMembers": "No agents in this session. Please add an agent.",
+    "selectAgent": "Select agent"
   },
   "dm": {
     "addAgent": "Add Agent",
