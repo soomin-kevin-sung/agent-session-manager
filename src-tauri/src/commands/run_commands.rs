@@ -79,16 +79,15 @@ pub async fn start_agent_run(
     let resolved_work_dir = if let Some(ref dir) = input.work_dir {
         dir.clone()
     } else if let Some(ref sid) = input.session_id {
-        match db::sessions::get_by_id(&state.db, sid).await {
-            Ok(session) => session.work_directory,
-            Err(_) => dirs::home_dir()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string(),
-        }
+        // Session must resolve — don't fallback to home for project work
+        let session = db::sessions::get_by_id(&state.db, sid).await?;
+        session.work_directory
     } else {
+        // DM: use home directory
         dirs::home_dir()
-            .unwrap_or_default()
+            .ok_or_else(|| AppError::Config {
+                message: "Cannot determine home directory".into(),
+            })?
             .to_string_lossy()
             .to_string()
     };
