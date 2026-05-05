@@ -55,6 +55,7 @@ impl AgentRuntime for ClaudeRuntime {
             work_dir: work_dir.map(String::from),
             env_vars: vec![
                 ("CLAUDE_CODE_DISABLE_AUTO_MEMORY".into(), "1".into()),
+                ("CLAUDE_CODE_DISABLE_CLAUDE_MDS".into(), "1".into()),
             ],
             env_clear: false,
         })
