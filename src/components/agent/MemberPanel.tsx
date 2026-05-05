@@ -6,7 +6,7 @@ import { useMessageStore } from "@/stores/message-store";
 import { useUIStore } from "@/stores/ui-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { MessageSquare, Plus } from "lucide-react";
+import { MessageSquare, Pencil, Plus } from "lucide-react";
 
 const AGENT_COLORS = [
   "bg-indigo-600",
@@ -27,7 +27,7 @@ export function MemberPanel() {
   const { channels, activeWorkspaceId, setActiveChannel, createChannel } =
     useWorkspaceStore();
   const { fetchMessages } = useMessageStore();
-  const { setAgentCreationModal } = useUIStore();
+  const { setAgentCreationModal, setEditingAgent } = useUIStore();
 
   // Pending guard to prevent duplicate DM creation
   const pendingDm = useRef<Set<string>>(new Set());
@@ -122,6 +122,7 @@ export function MemberPanel() {
               color={getAgentColor(i)}
               online
               onOpenDm={() => openOrCreateDm(agent)}
+              onEdit={() => setEditingAgent(agent.id)}
               dmDisabled={!activeWorkspaceId}
             />
           ))}
@@ -143,6 +144,7 @@ export function MemberPanel() {
               color={getAgentColor(onlineAgents.length + i)}
               online={false}
               onOpenDm={() => openOrCreateDm(agent)}
+              onEdit={() => setEditingAgent(agent.id)}
               dmDisabled={!activeWorkspaceId}
             />
           ))}
@@ -165,6 +167,7 @@ function AgentCard({
   color,
   online,
   onOpenDm,
+  onEdit,
   dmDisabled,
 }: {
   name: string;
@@ -173,6 +176,7 @@ function AgentCard({
   color: string;
   online: boolean;
   onOpenDm: () => void;
+  onEdit: () => void;
   dmDisabled: boolean;
 }) {
   const { t } = useTranslation();
@@ -203,6 +207,14 @@ function AgentCard({
         </p>
       </div>
       {/* Explicit DM button — visible on hover, keyboard accessible */}
+      <button
+        onClick={onEdit}
+        className="shrink-0 rounded p-1 text-zinc-500 opacity-0 transition-opacity hover:bg-zinc-800 hover:text-zinc-200 focus:opacity-100 group-hover:opacity-100"
+        aria-label={t("agent.edit", { name, defaultValue: `Edit ${name}` })}
+        title={t("agent.edit", { name, defaultValue: `Edit ${name}` })}
+      >
+        <Pencil className="size-4" />
+      </button>
       <button
         onClick={onOpenDm}
         disabled={dmDisabled}

@@ -4,6 +4,7 @@ import { ChatArea } from "@/components/chat/ChatArea";
 import { MemberPanel } from "@/components/agent/MemberPanel";
 import { TerminalPanel } from "@/components/terminal/TerminalPanel";
 import { AgentCreationModal } from "@/components/agent/AgentCreationModal";
+import { AgentEditModal } from "@/components/agent/AgentEditModal";
 import { WorkspaceCreationModal } from "@/components/workspace/WorkspaceCreationModal";
 import { HomeView } from "@/components/home/HomeView";
 import { OnboardingPage } from "@/components/onboarding/OnboardingPage";
@@ -101,6 +102,7 @@ export function AppLayout() {
       )}
       {/* Modals — always rendered once, controlled by store state */}
       <AgentCreationModal />
+      <AgentEditModal />
       <WorkspaceCreationModal />
       <SessionCreationModal />
     </div>

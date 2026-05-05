@@ -27,6 +27,14 @@ export interface CreateAgentInput {
   permissions: string[];  // e.g. ["create_agent", "execute_cli", "create_session"]
 }
 
+export interface UpdateAgentInput {
+  name?: string;
+  model_name?: string;
+  persona?: string;
+  config?: string;
+  enabled?: boolean;
+}
+
 // Workspace types
 export interface Workspace {
   id: string;
@@ -182,6 +190,7 @@ export const EVENTS = {
 export const api = {
   agents: {
     create: (input: CreateAgentInput) => invoke<Agent>("create_agent", { input }),
+    update: (id: string, input: UpdateAgentInput) => invoke<Agent>("update_agent", { id, input }),
     get: (id: string) => invoke<Agent>("get_agent", { id }),
     list: () => invoke<Agent[]>("list_agents"),
     delete: (id: string) => invoke<void>("delete_agent", { id }),

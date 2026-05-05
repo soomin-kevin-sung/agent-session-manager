@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api, type Agent, type CreateAgentInput } from "@/lib/tauri";
+import { api, type Agent, type CreateAgentInput, type UpdateAgentInput } from "@/lib/tauri";
 
 interface AgentState {
   agents: Agent[];
@@ -8,6 +8,7 @@ interface AgentState {
 
   fetchAgents: () => Promise<void>;
   createAgent: (input: CreateAgentInput) => Promise<Agent>;
+  updateAgent: (id: string, input: UpdateAgentInput) => Promise<Agent>;
   deleteAgent: (id: string) => Promise<void>;
   setRunActive: (agentId: string, runId: string) => void;
   setRunInactive: (agentId: string) => void;
@@ -38,6 +39,17 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       return agent;
     } catch (error) {
       console.error("Failed to create agent", error);
+      throw error;
+    }
+  },
+
+  updateAgent: async (id, input) => {
+    try {
+      const agent = await api.agents.update(id, input);
+      await get().fetchAgents();
+      return agent;
+    } catch (error) {
+      console.error("Failed to update agent", error);
       throw error;
     }
   },

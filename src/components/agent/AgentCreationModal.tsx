@@ -14,54 +14,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import type { CreateAgentInput } from "@/lib/tauri";
-
-interface ModelOption {
-  value: string;
-  label: string;
-  runtime: "claude_cli" | "codex_cli";
-  provider: "anthropic" | "openai";
-  group: string;
-}
-
-const ALL_MODELS: ModelOption[] = [
-  { value: "claude-opus-4-6", label: "Claude Opus 4.6", runtime: "claude_cli", provider: "anthropic", group: "Claude" },
-  { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", runtime: "claude_cli", provider: "anthropic", group: "Claude" },
-  { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5", runtime: "claude_cli", provider: "anthropic", group: "Claude" },
-  { value: "gpt-5.5", label: "Codex GPT-5.5", runtime: "codex_cli", provider: "openai", group: "Codex" },
-  { value: "o3", label: "Codex o3", runtime: "codex_cli", provider: "openai", group: "Codex" },
-  { value: "o4-mini", label: "Codex o4-mini", runtime: "codex_cli", provider: "openai", group: "Codex" },
-  { value: "gpt-4.1", label: "Codex GPT-4.1", runtime: "codex_cli", provider: "openai", group: "Codex" },
-];
-
-const GROUPS = [...new Set(ALL_MODELS.map((m) => m.group))];
-
-interface Preset {
-  id: string;
-  key: string;
-  defaultPermissions?: string[];
-}
-
-const ALL_PERMISSIONS = ["execute_cli", "create_agent", "create_session", "assign_task", "review"];
-
-const PRESETS: Preset[] = [
-  { id: "custom", key: "custom" },
-  { id: "manager", key: "manager", defaultPermissions: ALL_PERMISSIONS },
-  { id: "developer", key: "developer" },
-  { id: "frontend-developer", key: "frontendDeveloper" },
-  { id: "backend-developer", key: "backendDeveloper" },
-  { id: "code-reviewer", key: "codeReviewer" },
-  { id: "project-manager", key: "projectManager", defaultPermissions: ["create_agent", "create_session", "assign_task", "review"] },
-  { id: "devops-engineer", key: "devopsEngineer" },
-  { id: "qa-engineer", key: "qaEngineer" },
-];
-
-const AVAILABLE_PERMISSIONS = [
-  { key: "execute_cli", labelKey: "permissions.executeCli" },
-  { key: "create_agent", labelKey: "permissions.createAgent" },
-  { key: "create_session", labelKey: "permissions.createSession" },
-  { key: "assign_task", labelKey: "permissions.assignTask" },
-  { key: "review", labelKey: "permissions.review" },
-] as const;
+import {
+  ALL_MODELS,
+  AVAILABLE_PERMISSIONS,
+  GROUPS,
+  PRESETS,
+  buildPersonaJson,
+} from "@/components/agent/agent-form";
 
 export function AgentCreationModal() {
   const { t } = useTranslation();
@@ -136,16 +95,6 @@ export function AgentCreationModal() {
     setIsModified(false);
   };
 
-  const buildPersonaJson = (): string | undefined => {
-    const persona: Record<string, string> = {};
-    if (role.trim()) persona.role = role.trim();
-    if (expertise.trim()) persona.expertise = expertise.trim();
-    if (description.trim()) persona.description = description.trim();
-    return Object.keys(persona).length > 0
-      ? JSON.stringify(persona)
-      : undefined;
-  };
-
   const resetForm = () => {
     setName("");
     setSelectedModel(ALL_MODELS[0].value);
@@ -173,7 +122,7 @@ export function AgentCreationModal() {
         runtime_type: model.runtime,
         provider: model.provider,
         model_name: model.value,
-        persona: buildPersonaJson(),
+        persona: buildPersonaJson(role, expertise, description),
         permissions,
       };
       await createAgent(input);
